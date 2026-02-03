@@ -1,0 +1,24 @@
+# 使用默认的 PTFE 文件（不需要指定）
+python assemble_ptfe_water_interface.py water_microdroplets/H2O_droplet_8angstroms.xyz
+
+# 仍然可以指定自定义的 PTFE 文件
+python assemble_ptfe_water_interface.py custom_ptfe.xyz water_microdroplets/H2O_droplet_8angstroms.xyz
+
+# 完整示例，使用默认 PTFE 文件
+python assemble_ptfe_water_interface.py water_microdroplets/H2O_droplet_10angstroms.xyz -g 4.0 --output-dir output10A/
+
+# 使用默认 PTFE 文件
+python assemble_ptfe_water_interface.py --water-file water_microdroplets/H2O_droplet_8angstroms.xyz -g 3.0
+
+# 指定自定义 PTFE 文件
+python assemble_ptfe_water_interface.py --ptfe-file custom_ptfe.xyz --water-file water_microdroplets/H2O_droplet_10angstroms.xyz -g 5.0
+
+# 完整示例
+python assemble_ptfe_water_interface.py --ptfe-file water_microdroplets/ptfe_slab.xyz --water-file water_microdroplets/H2O_droplet_10angstroms.xyz -g 0.0 --output-dir output10A_gap0A/
+
+# Build droplet cap
+python assemble_ptfe_water_interface.py --ptfe-file ptfe_slab/ptfe_slab.xyz --water-file water_microdroplets/H2O_droplet_8angstroms.xyz -g -7.0 --vacuum-height 15.0 --bottom-offset 1.0 --output-dir output8A_cap7A/
+
+python assemble_silicone_water_interface.py --silicone-file silicone_slab/silicone_slab.xyz --water-file water_microdroplets/H2O_droplet_8angstroms.xyz -g -7.0 --vacuum-height 60.0 --bottom-offset 30.0 --output-dir silicone_output8A_cap7A/
+
+python assemble_silicone_water_interface.py --silicone-file silicone_slab/silicone_slab.xyz --water-file water_microdroplets/H2O_droplet_8angstroms.xyz -g -7.0 --vacuum-height 60.0 --bottom-offset 30.0 --output-dir silicone_output8A_cap7A/

@@ -1,0 +1,11 @@
+# 激活环境
+conda activate Interfacial_H2O
+
+# 线性 PDMS（无交联）
+python silicone_slab.py --chain-length 6 --rows 3 --layers 3
+
+# 过氧化物交联（5 个交联点）
+python silicone_slab.py --crosslink-mode peroxide --crosslink-count 5 --seed 42
+
+# 按密度交联（3% 甲基参与）
+python silicone_slab.py --crosslink-mode peroxide --crosslink-density 0.08 --seed 42 --output silicone_slab.xyz
