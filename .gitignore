@@ -1,3 +1,16 @@
+# Untrack LAMMPS output files in model building
 lammps_melting-*
 relaxed_structure_assembled_by_H2O
 *_collection
+
+# Untrack CP2K output files not essential
+*_opt-1.restart
+*_opt-1.restart.bak-1
+*_opt-BFGS.Hessian
+*_opt-RESTART.wfn
+*_opt-RESTART.wfn.bak-1
+*_opt-pos-1.xyz
+
+# Untrack HPC output files not essential
+slurm-*.error
+slurm-*.out

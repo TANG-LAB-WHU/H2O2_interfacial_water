@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --job-name=geo_opt               ##作业名字
+#SBATCH --partition=9a14a                ##申请开通这个分区权限
+#SBATCH --account=supervisor             ##将supervisor替换为李老师付费账号
+#SBATCH --nodes=2                        ##节点
+#SBATCH --ntasks-per-node=192            ##申请核心
+#SBATCH --cpus-per-task=1                ##每个任务申请的CPU数
+#SBATCH --error=slurm-%j.error           ##错误输出
+#SBATCH --output=slurm-%j.out            ##输出
+
+#for env
+source /home/baihaiyan/project/cp2k/env_cp2k
+
+##run
+cd $SLURM_SUBMIT_DIR
+
+srun cp2k.popt -i geo_opt.inp -o geo_opt.out 
+

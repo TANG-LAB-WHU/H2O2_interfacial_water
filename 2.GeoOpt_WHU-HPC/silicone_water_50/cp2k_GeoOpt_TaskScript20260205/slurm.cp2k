@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --job-name=geo_opt               
+#SBATCH --partition=9a14a               
+#SBATCH --account=lijinjun             
+#SBATCH --nodes=1                        
+#SBATCH --ntasks-per-node=192            
+#SBATCH --cpus-per-task=1                
+#SBATCH --error=slurm-%j.error           
+#SBATCH --output=slurm-%j.out            
+
+#for env
+source /home/baihaiyan/project/cp2k/env_cp2k
+
+##run
+cd $SLURM_SUBMIT_DIR
+
+mpirun -np $SLURM_NTASKS cp2k.popt -i geo_opt.inp -o geo_opt.out 
+
