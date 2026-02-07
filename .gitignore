@@ -10,6 +10,17 @@ relaxed_structure_assembled_by_H2O
 *_opt-RESTART.wfn
 *_opt-RESTART.wfn.bak-1
 *_opt-pos-1.xyz
+*_aimd-1.restart
+*_aimd-1.restart.bak-1
+*_aimd-RESTART.wfn
+*_aimd-RESTART.wfn.bak-1
+*_aimd-pos-1.xyz
+*_aimd-1_*.restart
+aimd.out
+*_aimd-vel-1.xyz
+*_aimd-frc-1.xyz
+
+
 
 # Untrack HPC output files non-essential
 slurm-*.error
