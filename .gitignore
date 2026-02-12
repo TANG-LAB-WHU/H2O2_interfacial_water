@@ -21,7 +21,10 @@ aimd.out
 *_aimd-frc-1.xyz
 
 
-
 # Untrack HPC output files non-essential
 slurm-*.error
 slurm-*.out
+*.sh
+
+# Untrack test output files for docker
+docker_test/
