@@ -28,10 +28,10 @@
  DBCSR| Split modifier for TAS multiplication algorithm                  1.0E+00 (U)
 
 
-  **** **** ******  **  PROGRAM STARTED AT               2026-02-26 01:07:01.174
- ***** ** ***  *** **   PROGRAM STARTED ON                          1fda303070d0
+  **** **** ******  **  PROGRAM STARTED AT               2026-02-26 01:00:26.734
+ ***** ** ***  *** **   PROGRAM STARTED ON                          231170086cbc
  **    ****   ******    PROGRAM STARTED BY                             <unknown>
- ***** **    ** ** **   PROGRAM PROCESS ID                                   639
+ ***** **    ** ** **   PROGRAM PROCESS ID                                   638
   **** **  *******  **  PROGRAM STARTED IN                             /mnt/cp2k
 
  CP2K| version string:                 CP2K version 2025.2 (Development Version)
@@ -78,12 +78,12 @@
  MEMORY| system memory details [Kb]
  MEMORY|                        rank 0           min           max       average
  MEMORY| MemTotal             49330336      49330336      49330336      49330336
- MEMORY| MemFree              46936940      46936940      46936940      46936940
- MEMORY| Buffers                 29252         29252         29252         29252
- MEMORY| Cached                1134224       1134224       1134224       1134224
- MEMORY| Slab                   219628        219628        219628        219628
- MEMORY| SReclaimable           120680        120680        120680        120680
- MEMORY| MemLikelyFree        48221096      48221096      48221096      48221096
+ MEMORY| MemFree              47121020      47121020      47121020      47121020
+ MEMORY| Buffers                 28876         28876         28876         28876
+ MEMORY| Cached                 959604        959604        959604        959604
+ MEMORY| Slab                   218740        218740        218740        218740
+ MEMORY| SReclaimable           120064        120064        120064        120064
+ MEMORY| MemLikelyFree        48229564      48229564      48229564      48229564
 
 
  *** Fundamental physical constants (SI units) ***
@@ -1727,20 +1727,38 @@
   Precond_solver : DEFAULT
   Line search : ADPT : UNKNOWN
   stepsize       :    0.01000000                  energy_gap     :    0.01000000
-  eps_taylor     :   0.10000E-15                  max_taylor     :             4
+  ortho_irac     : CHOL                           irac_degree    :             4
+  max_irac       :            50                  eps_irac       :   0.10000E-09
+  eps_irac_switch:   0.10000E-01                  eps_irac_quick_exit: 0.100E-04
+  on_the_fly_loc : F
   ----------------------------------- OT ---------------------------------------
 
   Step     Update method      Time    Convergence         Total energy    Change
   ------------------------------------------------------------------------------
-     1 OT CG       0.20E-01   92.5     0.01918292     -2422.7628595349 -2.42E+03
-     - OT LS       0.40E-01   39.5                    -2440.1840509725
-     - OT LS       0.30E-01   39.5                    -2426.4054380544
-     - OT LS       0.21E-01   38.8                    -2436.9559987251
-     2 OT CG       0.42E-01   69.1     0.01074492     -2439.7911609181 -1.70E+01
-     - OT LS       0.84E-01   38.4                    -2464.4834778677
-     - OT LS       0.17E+00   39.2                    -2481.0072873749
-     - OT LS       0.34E+00   39.3                    -2496.0346238447
-     - OT LS       0.25E+00   38.4                    -2472.1584232518
-     - OT LS       0.19E+00   39.2                    -2492.6242380946
-     3 OT CG       0.39E+00   68.9     0.01250093     -2496.8307230634 -5.70E+01
-     - OT LS       0.19E+00   40.5                    -2187.7503454196
+
+ *******************************************************************************
+ *   ___                                                                       *
+ *  /   \                                                                      *
+ * [ABORT]                                                                     *
+ *  \___/                                   NYI                                *
+ *    |                                                                        *
+ *  O/|                                                                        *
+ * /| |                                                                        *
+ * / \                                                             qs_ot.F:478 *
+ *******************************************************************************
+
+
+ ===== Routine Calling Stack ===== 
+
+           12 qs_ot_get_orbitals_ref
+           11 ot_scf_mini
+           10 qs_scf_loop_do_ot
+            9 qs_scf_new_mos
+            8 scf_env_do_scf_inner_loop
+            7 scf_env_do_scf
+            6 qs_energies
+            5 qs_forces
+            4 cp_eval_at
+            3 geoopt_bfgs
+            2 cp_geo_opt
+            1 CP2K

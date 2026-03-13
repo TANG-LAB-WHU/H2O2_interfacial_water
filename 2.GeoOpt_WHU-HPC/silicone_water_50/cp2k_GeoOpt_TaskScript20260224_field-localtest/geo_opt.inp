@@ -1,4 +1,4 @@
-@SET EPS_SCF 3.0E-5
+@SET EPS_SCF 3.9E-4
 
 &GLOBAL
   PROJECT silicone_water_50_geo_opt
@@ -66,6 +66,7 @@
       &OT ON
         MINIMIZER CG
         #PRECONDITIONER FULL_ALL
+        #ALGORITHM IRAC
         ENERGY_GAP 0.01
         LINESEARCH ADAPT
         STEPSIZE 0.01
@@ -102,9 +103,19 @@
       &END VDW_POTENTIAL
     &END XC
     
+    #&PERIODIC_EFIELD
+    #  INTENSITY 0.007
+    #  POLARISATION 0.0 0.0 1.0
+    #&END PERIODIC_EFIELD
+    ! Electric field to simulate water microdroplet interface conditions
+    ! Field strength ~10^9 V/m (~0.36 V/Å) along z-axis (interface normal)
+    ! Using displacement field formulation for better interface description
     &PERIODIC_EFIELD
-      INTENSITY 0.007
-      POLARISATION 0.0 0.0 1.0
+      INTENSITY 0.007              ! a.u. (~0.36 V/Å = 3.6×10^9 V/m)
+      POLARISATION 0.0 0.0 1.0     ! Direction: z-axis (perpendicular to interface)
+      DISPLACEMENT_FIELD     ! Use displacement field formulation (Stengel2009)
+      # D_FILTER 0.0 0.0 1.0         ! Apply only along z-direction
+      D_FILTER 1.0 1.0 1.0         ! Apply to all directions
     &END PERIODIC_EFIELD
     
     &PRINT
