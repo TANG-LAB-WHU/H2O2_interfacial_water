@@ -4,15 +4,15 @@ x-gpu: &gpu
       reservations:
         devices:
           - capabilities: [gpu]
+            count: 1
 
 services:
   cp2k_opt:
     image: mycp2k-rtx5080:master_mpich_native_cuda_A100_psmp
+    #image: mycp2k-rtx5090:master_mpich_native_cuda_A100_psmp
     working_dir: /mnt/cp2k
     volumes:
-      - ./cp2k_run:/mnt/cp2k # Mount input/output directory
-    gpus: "all"
-    # shm_size: "8g"
+      - .:/mnt/cp2k
     environment:
       - OMP_NUM_THREADS=1
       - MKL_NUM_THREADS=1
