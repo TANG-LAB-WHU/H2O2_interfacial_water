@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  ipi-lammps:
+    build:
+      context: .
+      dockerfile: rtx5080_torch_all_uv_cuequ.Dockerfile
+    image: lammps_ipi:latest
+    container_name: ipi_lammps_runner
+    
+    # GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # Mount your simulation directory
+    volumes:
+      - ./workspace:/workspace
+      - ./ipi_simulations:/ipi_simulations
+    
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    
+    # Default working directory
+    working_dir: /ipi_simulations
+    
+    # Environment variables
+    environment:
+      - OMP_NUM_THREADS=4
+      - NVIDIA_VISIBLE_DEVICES=all
+    
+    # Run bash by default (use run_ipi.sh for automated runs)
+    command: /bin/bash

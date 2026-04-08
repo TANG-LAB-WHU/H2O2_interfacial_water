@@ -1,0 +1,45 @@
+# =============================================================================
+# Docker Compose configuration for PDMS melt-quench densification
+# =============================================================================
+# Purpose: Run LAMMPS with MACE ML force field to densify PDMS to ~1.10 g/cm^3
+# 
+# Services:
+#   - mace_model_conversion: Convert MACE model to MLIAP format
+#   - lammps_melt_quench: Run melt-quench simulation
+# =============================================================================
+
+services:
+  # Base service configuration
+  base:
+    image: lammps_rtx5080_full_torch:latest_mdi_polarized_calphy_mace
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      - PYTHONPATH=/workspace
+      - TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+      - OMP_PROC_BIND=spread
+      - OMP_PLACES=threads
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Service for MACE model conversion to MLIAP format
+  # Usage: docker-compose run --rm mace_model_conversion [model_path]
+  # If no model_path is provided, uses default: mace_pretained_models/mace-mpa-0-medium.model
+  mace_model_conversion:
+    extends: base
+    container_name: mace_model_conversion
+    entrypoint: bash -c
+    command: "cd /workspace && pip uninstall -y cuequivariance cuequivariance-torch cuequivariance-ops-torch-cu12 cuequivariance-ops 2>/dev/null; python3 convert_mace_to_mliap.py"
+
+  # Service for LAMMPS melt-quench simulation
+  # Using KOKKOS GPU acceleration for MACE MLIAP compatibility
+  lammps_melt_quench:
+    extends: base
+    container_name: lammps_melt_quench
+    command: bash -c "cd /workspace && lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in lammps_melt_quench.inp"

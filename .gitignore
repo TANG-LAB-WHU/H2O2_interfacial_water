@@ -1,5 +1,5 @@
 # Untrack LAMMPS output files in model building
-lammps_melting-*
+#lammps_melting-*
 relaxed_structure_assembled_by_H2O
 *_collection
 
