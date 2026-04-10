@@ -1,10 +1,10 @@
-# OPTIMIZED PERFORMANCE VERSION - Target: 1.10 g/cm³
+# OPTIMIZED PHYSICS-INFORMED VERSION - Target: 1.10 g/cm³
 # 
-# Key improvements:
-# 1. Peak pressure reduced to 2.0 GPa (Sweet spot for MACE performance)
-# 2. Maintains stability with tdamp=0.5, pdamp=10.0
-# 3. Peak temperature capped at 500K for numerical stability
-# 4. Multi-stage release (2.0 -> 1.0 -> 0.5 -> 0 GPa) to lock density
+# Key improvements based on PDMS EOS and Bulk Modulus (1.0-1.5 GPa):
+# 1. Peak pressure reduced to 0.5 GPa (5000 bar) which mathematically yields ~1.10 g/cm³.
+# 2. Maintains stability with tdamp=0.5, pdamp=10.0.
+# 3. Peak temperature capped at 500K. PDMS Tg is 148K, so 500K is highly fluid.
+# 4. Gentle multi-stage release (0.5 -> 0 GPa) with slow cooling to lock density.
 # =============================================================================
 
 log             melt_quench_log.lammps
@@ -27,7 +27,7 @@ thermo          100
 thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
 thermo_modify   flush yes
 
-# Optimized damping parameters from successful DONE2 run
+# Optimized damping parameters from successful runs
 variable        tdamp equal 0.5
 variable        pdamp equal 10.0
 
@@ -75,93 +75,70 @@ timestep        0.001
 # -----------------------------------------------------------------------------
 # Step 2: Heating 300K -> 500K
 # -----------------------------------------------------------------------------
-print "Step 2: Heating 300K -> 500K (600 steps)"
+print "Step 2: Heating 300K -> 500K (1000 steps)"
 
-fix             heat all npt temp 300.0 500.0 ${tdamp} iso 0.0 0.0 ${pdamp}
-run             600
+fix             heat all npt temp 300.0 500.0 ${tdamp} iso 1.0 1.0 ${pdamp}
+run             1000
 unfix           heat
 
 # -----------------------------------------------------------------------------
-# Step 3: Compression 0 -> 2 GPa
+# Step 3: Gentle Compression to 0.5 GPa (5000 bar)
 # -----------------------------------------------------------------------------
-print "Step 3: Compression 0 -> 2 GPa (2000 steps)"
+print "Step 3: Compression 1.0 bar -> 5000.0 bar (2000 steps)"
 
-fix             compress all npt temp 500.0 500.0 ${tdamp} iso 0.0 20000.0 ${pdamp}
+fix             compress all npt temp 500.0 500.0 ${tdamp} iso 1.0 5000.0 ${pdamp}
 run             2000
 unfix           compress
 
-# -----------------------------------------------------------------------------
-# Step 4: Extended hold at 2 GPa with cooling to lock structure
-# -----------------------------------------------------------------------------
-print "Step 4a: Hold at 2 GPa - high temp (2000 steps)"
-fix             hold1 all npt temp 500.0 500.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             2000
-unfix           hold1
-
-print "Step 4b: Cool to 350K under pressure (1500 steps)"
-fix             anneal1 all npt temp 500.0 350.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             1500
-unfix           anneal1
-
-print "Step 4c: Hold at 350K under 2 GPa - LOCK STRUCTURE (1500 steps)"
-fix             anneal1b all npt temp 350.0 350.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             1500
-unfix           anneal1b
-
-print "Step 4d: Reheat to 400K for annealing (1000 steps)"
-fix             anneal2 all npt temp 350.0 400.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             1000
-unfix           anneal2
-
-print "Step 4e: Final hold at 2 GPa, 400K (2000 steps)"
-fix             hold2 all npt temp 400.0 400.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             2000
-unfix           hold2
-
 variable        compressed_density equal $(density)
 print "==========================================="
-print "Density after compression: ${compressed_density} g/cm^3"
+print "Density after compression (5000 bar): ${compressed_density} g/cm^3"
 print "==========================================="
 
 # -----------------------------------------------------------------------------
-# Step 5: THREE-STAGE Gradual pressure release with COOLING
+# Step 4: Hold and Cool to lock structure
 # -----------------------------------------------------------------------------
-print "Step 5a: Pressure release 2 GPa -> 1 GPa (2000 steps)"
-fix             release1 all npt temp 400.0 380.0 ${tdamp} iso 20000.0 10000.0 ${pdamp}
+print "Step 4a: Hold at 5000 bar - high temp (1000 steps)"
+fix             hold1 all npt temp 500.0 500.0 ${tdamp} iso 5000.0 5000.0 ${pdamp}
+run             1000
+unfix           hold1
+
+print "Step 4b: Cool to 300K under 5000 bar pressure (2000 steps)"
+fix             anneal1 all npt temp 500.0 300.0 ${tdamp} iso 5000.0 5000.0 ${pdamp}
 run             2000
+unfix           anneal1
+
+print "Step 4c: Hold at 300K under 5000 bar - LOCK STRUCTURE (1000 steps)"
+fix             anneal1b all npt temp 300.0 300.0 ${tdamp} iso 5000.0 5000.0 ${pdamp}
+run             1000
+unfix           anneal1b
+
+variable        density_cool equal $(density)
+print "Density after cooling at 5000 bar: ${density_cool} g/cm^3"
+
+# -----------------------------------------------------------------------------
+# Step 5: Very Slow Pressure Release
+# -----------------------------------------------------------------------------
+print "Step 5: Slow pressure release 5000 bar -> 1.0 bar at 300K (4000 steps)"
+fix             release1 all npt temp 300.0 300.0 ${tdamp} iso 5000.0 1.0 ${pdamp}
+run             4000
 unfix           release1
 
-variable        density_1gpa equal $(density)
-print "Density at 1 GPa: ${density_1gpa} g/cm^3"
+variable        density_release equal $(density)
+print "Density at 1.0 bar: ${density_release} g/cm^3"
 
-print "Step 5b: Pressure release 1 GPa -> 0.5 GPa (2000 steps)"
-fix             release2 all npt temp 380.0 350.0 ${tdamp} iso 10000.0 5000.0 ${pdamp}
+# -----------------------------------------------------------------------------
+# Step 6: Final equilibration at ambient (300K, 1.0 bar)
+# -----------------------------------------------------------------------------
+print "Step 6: Final NPT equilibration at 300K (2000 steps)"
+
+fix             equil1 all npt temp 300.0 300.0 ${tdamp} iso 1.0 1.0 ${pdamp}
 run             2000
-unfix           release2
-
-variable        density_05gpa equal $(density)
-print "Density at 0.5 GPa: ${density_05gpa} g/cm^3"
-
-print "Step 5c: Pressure release 0.5 GPa -> 0 with deep cooling (3000 steps)"
-fix             release3 all npt temp 350.0 300.0 ${tdamp} iso 5000.0 0.0 ${pdamp}
-run             3000
-unfix           release3
-
-variable        density_0gpa equal $(density)
-print "Density at 0 GPa: ${density_0gpa} g/cm^3"
-
-# -----------------------------------------------------------------------------
-# Step 6: Final equilibration at ambient (300K, 0 GPa)
-# -----------------------------------------------------------------------------
-print "Step 6: Final NPT equilibration at 300K (1500 steps)"
-
-fix             equil1 all npt temp 300.0 300.0 ${tdamp} iso 0.0 0.0 ${pdamp}
-run             1500
 unfix           equil1
 
-print "Step 7: Final NVT relaxation to stabilize structure (500 steps)"
+print "Step 7: Final NVT relaxation to stabilize structure (1000 steps)"
 fix             equil2 all nvt temp 300.0 300.0 ${tdamp}
-run             500
+run             1000
 unfix           equil2
 
 # -----------------------------------------------------------------------------
@@ -190,14 +167,13 @@ variable        final_density equal $(density)
 variable        rel_error equal abs(v_final_density-v_target_density)/v_target_density*100
 
 print "==========================================="
-print "OPTIMIZED Melt-Quench (2.0 GPa) Complete!"
+print "OPTIMIZED Melt-Quench Complete!"
 print "==========================================="
 print "Density Summary (Target: 1.10 g/cm^3):"
 print "  Initial density:     ${init_density} g/cm^3"
 print "  After compression:   ${compressed_density} g/cm^3"
-print "  At 1 GPa:            ${density_1gpa} g/cm^3"
-print "  At 0.5 GPa:          ${density_05gpa} g/cm^3"
-print "  At 0 GPa:            ${density_0gpa} g/cm^3"
+print "  After cooling (5kbar): ${density_cool} g/cm^3"
+print "  After release (1bar):  ${density_release} g/cm^3"
 print "  Final density:       ${final_density} g/cm^3"
 print "  Target:              ${target_density} g/cm^3"
 print "  Relative error:      ${rel_error}%%"
@@ -213,6 +189,6 @@ print "  - trajectory.lammpstrj      (MD LAMMPS trajectory)"
 print "  - trajectory.dcd            (MD DCD trajectory)"
 print "  - melt_quench_log.lammps    (LAMMPS log file)"
 print "==========================================="
-print "Total: ~20,000 steps (High Performance)"
-print "Strategy: 500K Peak, 2 GPa Compression (MACE Sweet Spot), 3-stage Release"
+print "Total: ~15,000 steps (High Performance)"
+print "Strategy: 500K Peak, 0.5 GPa (5000 bar) Compression, Slow Release"
 print "==========================================="
