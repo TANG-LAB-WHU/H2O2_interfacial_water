@@ -2,6 +2,10 @@
 #lammps_melting-*
 relaxed_structure_assembled_by_H2O
 *_collection
+*.lammpstrj
+*_trajectory.xyz
+*_traj.xyz
+trajectory.dcd
 
 # Untrack CP2K output files non-essential
 *_opt-1.restart
@@ -31,3 +35,5 @@ docker_test/
 
 # Ignore cp2k compilation directory
 cp2k_deployment
+
+# MACE pretrain model

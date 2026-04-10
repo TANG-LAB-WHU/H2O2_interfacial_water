@@ -10,13 +10,13 @@ package kokkos neigh half newton on
 # =============================================================================
 # LAMMPS input script for PDMS melt-quench densification
 # =============================================================================
-# OPTIMIZED VERSION v3 - Target: 1.10 g/cm³ - True T-P Annealing (100k)
+# ALIGNED VERSION (Ref: DONE2) - Target: 1.10 g/cm³
 #
-# Key improvements:
-# 1. Increased timestep to 1 fs
-# 2. Proper Melt phase at 1000K to fluidize polymer before applying pressure
-# 3. Aggressive Quench under 2 GPa pressure
-# 4. Total simulation time extended to 100 ps for physical relaxation
+# Key improvements from DONE2:
+# 1. Proven stability with tdamp=0.5, pdamp=10.0
+# 2. Peak temperature capped at 500K for numerical stability
+# 3. High-pressure hold (5 GPa) with gradual decompression/cooling
+# 4. Multi-stage release to minimize density rebound
 # =============================================================================
 
 log             melt_quench_log.lammps
