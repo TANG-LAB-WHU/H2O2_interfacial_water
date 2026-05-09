@@ -37,8 +37,8 @@ docker_test/
 cp2k_deployment
 
 # MACE pretrain model
-*.pt
-*.model
+# *.pt
+# *.model
 
 # CP2K optimization outputs from WHU HPC (deprecated)
 2.GeoOpt_WHU-HPC_deprecated/
