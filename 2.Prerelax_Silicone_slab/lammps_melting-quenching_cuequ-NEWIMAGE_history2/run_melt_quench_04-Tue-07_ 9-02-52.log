@@ -1,0 +1,66 @@
+========================================== 
+PDMS Melt-Quench Densification Simulation 
+Target density: 1.10 g/cm3 
+Using MACE Machine Learning Force Field 
+Log file: run_melt_quench_04-Tue-07_ 9-02-52.log 
+Started at: Tue 04/07/2026  9:02:52.30 
+========================================== 
+ 
+Using: docker-compose 
+Step 1: Converting XYZ to LAMMPS data format... 
+Successfully converted silicone_slab.xyz to silicone_slab.lmpdat
+Cell dimensions: 22.000 x 19.080 x 20.000 A
+Elements found: ['C', 'H', 'O', 'Si']
+Total atoms: 523
+Initial density: 0.762 g/cm^3
+Target density: 1.10 g/cm^3 (PDMS rubber)
+XYZ conversion completed successfully. 
+ 
+Step 2: Converting MACE model to MLIAP format... 
+Using default model: mace_pretained_models\mace-mpa-0-medium.model 
+Converting model in Docker container... 
+ Network lammps_melting-quenching_cuequ-newimage_default Creating 
+ Network lammps_melting-quenching_cuequ-newimage_default Created 
+ Container lammps_melting-quenching_cuequ-newimage-mace_model_conversion-run-fee5b94f147f Creating 
+ Container lammps_melting-quenching_cuequ-newimage-mace_model_conversion-run-fee5b94f147f Created 
+Failed to get GPU information from pynvml: Not Supported. Using default values for NVIDIA GeForce RTX 5080.
+/workspace/convert_mace_to_mliap.py:58: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
+  model = torch.load(
+/usr/local/lib/python3.10/dist-packages/mace/modules/models.py:85: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  "atomic_numbers", torch.tensor(atomic_numbers, dtype=torch.int64)
+GPU information: NVIDIA RTX A6000, 8, 6, 45, 84, 300, 2100
+cuEquivariance conversion is available - GPU acceleration will be enabled!
+No model path provided, using default: /workspace/mace_pretained_models/mace-mpa-0-medium.model
+Loading model from: /workspace/mace_pretained_models/mace-mpa-0-medium.model
+Converting model to cuEquivariance format for GPU acceleration...
+cuEquivariance conversion successful!
+Model loaded and converted to float64
+Using head: default
+Model saved to: /workspace/mace_pretained_models/mace-mpa-0-medium.model-mliap_lammps.pt
+Conversion successful!
+ 
+Model conversion completed successfully 
+Output file: mace_pretained_models\mace-mpa-0-medium.model-mliap_lammps.pt 
+ 
+Step 3: Running melt-quench simulation... 
+This may take a while... 
+ Container lammps_melting-quenching_cuequ-newimage-lammps_melt_quench-run-b72319cdd053 Creating 
+ Container lammps_melting-quenching_cuequ-newimage-lammps_melt_quench-run-b72319cdd053 Created 
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.9.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+lmp: error while loading shared libraries: libmkl_rt.so.2: cannot open shared object file: No such file or directory
+
+ERROR: Melt-quench simulation failed 

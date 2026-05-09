@@ -1,0 +1,217 @@
+# =============================================================================
+# LAMMPS input script for PDMS melt-quench densification
+# =============================================================================
+# OPTIMIZED VERSION - ~1 hour runtime (~20k steps)
+# 
+# Key improvements over original:
+# 1. Extended high-pressure equilibration (6000 steps vs 2000)
+# 2. Gradual two-stage pressure release (prevents density collapse)
+# 3. Increased pdamp for smoother barostat control
+# 4. Brief annealing cycle at high pressure
+#
+# Strategy: 5 GPa compression with proper equilibration and gradual release
+# =============================================================================
+
+log             melt_quench_log.lammps
+
+units           metal
+neighbor        1.0 bin
+dimension       3
+boundary        p p p
+atom_style      atomic
+atom_modify     map yes
+newton          on
+
+read_data       silicone_slab.lmpdat
+
+pair_style      mliap unified mace_pretained_models/mace-mpa-0-medium.model-mliap_lammps.pt 0
+pair_coeff      * * C H O Si
+
+thermo          100
+thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
+thermo_modify   flush yes
+
+# Optimized damping parameters for better pressure control
+variable        tdamp equal 0.5
+variable        pdamp equal 5.0
+
+# -----------------------------------------------------------------------------
+# Master trajectory dump - captures entire simulation (minimization + MD)
+# -----------------------------------------------------------------------------
+dump            full_traj all xyz 500 full_trajectory.xyz
+dump_modify     full_traj element C H O Si
+
+dump            full_lmp all custom 500 full_trajectory.lammpstrj id type x y z
+dump_modify     full_lmp sort id
+
+# -----------------------------------------------------------------------------
+# Step 1: Quick Minimization
+# -----------------------------------------------------------------------------
+print "Step 1: Quick Minimization"
+# Enable separate trajectory dump for minimization (higher frequency)
+dump            min_xyz all xyz 100 minimize_traj.xyz
+dump_modify     min_xyz element C H O Si
+
+dump            min_lmp all custom 100 minimize_traj.lammpstrj id type x y z
+dump_modify     min_lmp sort id
+
+# etol=0.0 (ignore energy), ftol=1e-8 eV/A (force-based convergence)
+minimize        0.0 1.0e-8 5000 50000
+
+# Disable minimization dumps
+undump          min_xyz
+undump          min_lmp
+
+variable        init_density equal density
+print "Initial density: ${init_density} g/cm^3"
+
+# -----------------------------------------------------------------------------
+# Enable trajectory dumps for MD runs (after minimization)
+# -----------------------------------------------------------------------------
+# XYZ trajectory for quick visualization
+dump            xyz_traj all xyz 500 trajectory.xyz
+dump_modify     xyz_traj element C H O Si
+
+# LAMMPS custom dump for MDAnalysis (includes box info)
+dump            lmp_traj all custom 500 trajectory.lammpstrj id type x y z
+dump_modify     lmp_traj sort id
+
+# DCD trajectory for VMD (binary, smaller file size, includes box)
+dump            dcd_traj all dcd 500 trajectory.dcd
+
+velocity        all create 300.0 12345 rot yes dist gaussian
+timestep        0.001
+
+# -----------------------------------------------------------------------------
+# Step 2: Heating 300K -> 500K (~5 min)
+# -----------------------------------------------------------------------------
+print "Step 2: Heating 300K -> 500K (600 steps)"
+
+fix             heat all npt temp 300.0 500.0 ${tdamp} iso 0.0 0.0 ${pdamp}
+run             600
+unfix           heat
+
+# -----------------------------------------------------------------------------
+# Step 3: Compression 0 -> 5 GPa (~15 min)
+# -----------------------------------------------------------------------------
+print "Step 3: Compression 0 -> 5 GPa (2000 steps)"
+
+fix             compress all npt temp 500.0 500.0 ${tdamp} iso 0.0 50000.0 ${pdamp}
+run             2000
+unfix           compress
+
+# -----------------------------------------------------------------------------
+# Step 4: Extended hold at 5 GPa with annealing (~25 min)
+# Key change: 6000 steps instead of 2000
+# -----------------------------------------------------------------------------
+print "Step 4a: Hold at 5 GPa - high temp (2000 steps)"
+fix             hold1 all npt temp 500.0 500.0 ${tdamp} iso 50000.0 50000.0 ${pdamp}
+run             2000
+unfix           hold1
+
+print "Step 4b: Annealing cycle - cool to 400K (1000 steps)"
+fix             anneal1 all npt temp 500.0 400.0 ${tdamp} iso 50000.0 50000.0 ${pdamp}
+run             1000
+unfix           anneal1
+
+print "Step 4c: Annealing cycle - reheat to 500K (1000 steps)"
+fix             anneal2 all npt temp 400.0 500.0 ${tdamp} iso 50000.0 50000.0 ${pdamp}
+run             1000
+unfix           anneal2
+
+print "Step 4d: Final hold at 5 GPa (2000 steps)"
+fix             hold2 all npt temp 500.0 500.0 ${tdamp} iso 50000.0 50000.0 ${pdamp}
+run             2000
+unfix           hold2
+
+variable        compressed_density equal density
+print "Density after compression: ${compressed_density} g/cm^3"
+
+# -----------------------------------------------------------------------------
+# Step 5: Gradual pressure release (KEY IMPROVEMENT) (~15 min)
+# Two-stage release to prevent density collapse
+# -----------------------------------------------------------------------------
+print "Step 5a: Pressure release 5 GPa -> 2 GPa (2000 steps)"
+fix             release1 all npt temp 500.0 450.0 ${tdamp} iso 50000.0 20000.0 ${pdamp}
+run             2000
+unfix           release1
+
+variable        mid_density equal density
+print "Density at 2 GPa: ${mid_density} g/cm^3"
+
+print "Step 5b: Pressure release 2 GPa -> 0 (2000 steps)"
+fix             release2 all npt temp 450.0 400.0 ${tdamp} iso 20000.0 0.0 ${pdamp}
+run             2000
+unfix           release2
+
+# -----------------------------------------------------------------------------
+# Step 6: Cooling 400K -> 300K
+# -----------------------------------------------------------------------------
+print "Step 6: Cooling 400K -> 300K (600 steps)"
+
+fix             cool all npt temp 400.0 300.0 ${tdamp} iso 0.0 0.0 ${pdamp}
+run             600
+unfix           cool
+
+# -----------------------------------------------------------------------------
+# Step 7: Final equilibration at ambient
+# -----------------------------------------------------------------------------
+print "Step 7: Final equilibration (600 steps)"
+
+fix             equil all npt temp 300.0 300.0 ${tdamp} iso 0.0 0.0 ${pdamp}
+run             600
+unfix           equil
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+# Disable trajectory dumps before final output
+undump          xyz_traj
+undump          lmp_traj
+undump          dcd_traj
+undump          full_traj
+undump          full_lmp
+
+write_data      densified_pdms.lmpdat
+
+dump            final all xyz 1 densified_pdms.xyz
+dump_modify     final element C H O Si
+run             0
+undump          final
+
+write_restart   densified_pdms.restart
+
+# -----------------------------------------------------------------------------
+# Summary
+# -----------------------------------------------------------------------------
+variable        target_density equal 1.10
+variable        final_density equal density
+variable        rel_error equal abs(v_final_density-v_target_density)/v_target_density*100
+
+print "=========================================="
+print "OPTIMIZED Melt-Quench Complete!"
+print "=========================================="
+print "Density Summary:"
+print "  Initial density:     ${init_density} g/cm^3"
+print "  After compression:   ${compressed_density} g/cm^3"
+print "  At 2 GPa:            ${mid_density} g/cm^3"
+print "  Final density:       ${final_density} g/cm^3"
+print "  Target:              ${target_density} g/cm^3"
+print "  Relative error:      ${rel_error}%%"
+print "=========================================="
+print "Output files:"
+print "  - densified_pdms.lmpdat     (LAMMPS data format)"
+print "  - densified_pdms.xyz        (XYZ format)"
+print "  - densified_pdms.restart    (restart file)"
+print "  - full_trajectory.xyz       (complete XYZ trajectory: min + MD)"
+print "  - full_trajectory.lammpstrj (complete LAMMPS trajectory: min + MD)"
+print "  - minimize_traj.xyz         (minimization XYZ trajectory)"
+print "  - minimize_traj.lammpstrj   (minimization LAMMPS trajectory)"
+print "  - trajectory.xyz            (MD XYZ trajectory)"
+print "  - trajectory.lammpstrj      (MD LAMMPS trajectory with box)"
+print "  - trajectory.dcd            (MD DCD binary trajectory)"
+print "  - melt_quench_log.lammps    (LAMMPS log file)"
+print "=========================================="
+print "Total: ~20000 steps (~1 hour)"
+print "Strategy: 5 GPa with annealing + gradual release"
+print "=========================================="
