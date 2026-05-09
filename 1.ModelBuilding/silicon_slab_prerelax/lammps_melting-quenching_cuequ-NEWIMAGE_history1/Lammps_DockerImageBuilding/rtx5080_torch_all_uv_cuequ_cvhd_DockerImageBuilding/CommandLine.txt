@@ -1,1 +1,0 @@
-DOCKER_BUILDKIT=1 docker build -t mylammps_rtx5080:full_features_mlip_aimd_cuequ_cvhd -f rtx5080_torch_all_uv_cuequ_cvhd.Dockerfile .

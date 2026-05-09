@@ -1,5 +1,0 @@
-water droplet radius:
-
-5 angstroms, 18
-8 angstroms, 72
-10 angstroms, 140
