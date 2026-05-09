@@ -1,0 +1,19 @@
+LAMMPS (10 Dec 2025)
+KOKKOS mode with Kokkos version 4.7.1 is enabled
+  using double precision
+  using view layout = legacy
+  will use up to 1 GPU(s) per node
+WARNING: When using a single thread, the Kokkos Serial backend (i.e. Makefile.kokkos_mpi_only) gives better performance than the OpenMP backend (src/KOKKOS/kokkos.cpp:266)
+  using 1 OpenMP thread(s) per MPI task
+package kokkos
+package kokkos neigh half newton on
+# OPTIMIZED PHYSICS-INFORMED VERSION - Target: 1.10 g/cm³
+#
+# Key improvements based on PDMS EOS and Bulk Modulus (1.0-1.5 GPa):
+# 1. Peak pressure reduced to 0.5 GPa (5000 bar) which mathematically yields ~1.10 g/cm³.
+# 2. Maintains stability with tdamp=0.5, pdamp=10.0.
+# 3. Peak temperature capped at 500K. PDMS Tg is 148K, so 500K is highly fluid.
+# 4. Gentle multi-stage release (0.5 -> 0 GPa) with slow cooling to lock density.
+# =============================================================================
+
+log             melt_quench_log.lammps

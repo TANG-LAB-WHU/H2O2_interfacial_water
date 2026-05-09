@@ -1,0 +1,27 @@
+LAMMPS (22 Jul 2025 - Update 2)
+KOKKOS mode with Kokkos version 4.6.2 is enabled
+  will use up to 1 GPU(s) per node
+WARNING: When using a single thread, the Kokkos Serial backend (i.e. Makefile.kokkos_mpi_only) gives better performance than the OpenMP backend (src/KOKKOS/kokkos.cpp:221)
+  using 1 OpenMP thread(s) per MPI task
+package kokkos
+package kokkos neigh half newton on
+# =============================================================================
+# LAMMPS input script for PDMS melt-quench densification
+# =============================================================================
+# Purpose: Achieve target density ~1.10 g/cm^3 for crosslinked PDMS
+#
+# Workflow:
+#   1. Energy minimization
+#   2. Heat from 300K to 443K (170C, curing temperature)
+#   3. NPT equilibration at 443K (high temperature relaxation)
+#   4. Cool down from 443K to 300K
+#   5. Final NPT equilibration at 300K
+#   6. Output densified structure
+#
+# Chemistry context:
+#   - Curing agent: 2,5-dimethyl-2,5-di(tert-butylperoxy)hexane (1%)
+#   - Curing conditions: 170C (443K), 10 min
+#   - Target density: 1.10 g/cm^3
+# =============================================================================
+
+log             melt_quench_log.lammps
