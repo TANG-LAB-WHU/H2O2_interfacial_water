@@ -1,9 +1,0 @@
-
-docker build -t mylammps_rtx5080:full_features_mlip_aimd -f rtx5080_torch_all.Dockerfile .
-
-docker build -t mylammps_rtx5080:full_features_mlip_aimd -f rtx5080_torch_all_uv.Dockerfile .
-
-DOCKER_BUILDKIT=1 docker build -t mylammps_rtx5080:full_features_mlip_aimd -f rtx5080_torch_all_uv.Dockerfile .
-DOCKER_BUILDKIT=1 docker build -t mylammps_rtx5080:full_features_mlip_aimd_cuequ -f rtx5080_torch_all_uv_cuequ.Dockerfile .
-
-docker build -t lammps_rtx5080_full_torch:latest_mdi_polarized_calphy_mace_cuequ -f rtx5080_torch_calphy_mace_cuequ.Dockerfile .
