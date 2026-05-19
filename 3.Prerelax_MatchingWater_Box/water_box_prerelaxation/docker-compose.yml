@@ -1,0 +1,55 @@
+# =============================================================================
+# Docker Compose configuration for Water Box NVT Prerelaxation
+# =============================================================================
+# Purpose: Run LAMMPS with MACE ML force field to relax water box at 298K
+#
+# Services:
+#   - mace_model_conversion: Convert MACE model to MLIAP format
+#   - lammps_prerelaxation: Run NVT relaxation simulation
+# =============================================================================
+
+services:
+  # Base service configuration
+  base:
+    # image: mylammps_rtx5080:full_features_mlip_aimd_cuequ
+    image: mylammps_rtx5090:full_features_mlip_aimd_cuequ_imp
+    working_dir: /workspace
+    # shm_size: '16gb'
+    volumes:
+      - .:/workspace
+    environment:
+      - PYTHONPATH=/workspace
+      - TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+      - PYTORCH_ALLOC_CONF=expandable_segments:True
+      - OMP_NUM_THREADS=1
+      - OMP_PROC_BIND=spread
+      - OMP_PLACES=threads
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Service for MACE model automated download
+  mace_model_download:
+    extends: base
+    container_name: mace_model_download
+    entrypoint: ["python3", "/workspace/mace_pretained_models/download_mace_model.py"]
+
+  # Service for MACE model conversion to MLIAP format
+  # Allows full command override during `docker compose run`
+  mace_model_conversion:
+    extends: base
+    container_name: mace_model_conversion
+    command: ["python3", "/workspace/convert_mace_to_mliap.py"]
+
+  # Service for LAMMPS NVT prerelaxation simulation
+  # Allows variable override during `docker compose run`
+  lammps_prerelaxation:
+    extends: base
+    container_name: lammps_prerelaxation
+    command: ["bash", "-c", "lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in lammps_prerelaxtion.inp"]
+

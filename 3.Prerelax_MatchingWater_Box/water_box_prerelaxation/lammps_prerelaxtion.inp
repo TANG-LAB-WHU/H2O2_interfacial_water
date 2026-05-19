@@ -1,0 +1,73 @@
+# =============================================================================
+# LAMMPS input script for Water Box NVT Prerelaxation using MACE
+# =============================================================================
+
+units           metal
+neighbor        2.0 bin
+neigh_modify    every 1 delay 0 check yes
+dimension       3
+boundary        p p p
+atom_style      atomic
+atom_modify     map yes
+newton          on
+
+read_data       water_box.lmpdat
+
+# Use dynamic model path passed from command line via -var MODEL_PT_PATH
+pair_style      mliap unified ${MODEL_PT_PATH} 0
+pair_coeff      * * O H
+
+thermo          100
+thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
+thermo_modify   flush yes
+
+# --- Key parameters ---
+variable        dt_val equal 0.0005    # 0.5 fs timestep
+variable        tdamp equal 0.05       # 100 * dt
+
+# =============================================================================
+# Trajectory dump
+# =============================================================================
+dump            xyz_traj all xyz 100 trajectory_water.xyz
+dump_modify     xyz_traj element O H
+
+dump            lmp_traj all custom 100 trajectory_water.lammpstrj id type x y z
+dump_modify     lmp_traj sort id
+
+# =============================================================================
+# Phase 1: Energy Minimization
+# =============================================================================
+print "Phase 1: Energy Minimization"
+minimize        0.0 1.0e-8 5000 50000
+
+# =============================================================================
+# Phase 2: NVT Relaxation
+# =============================================================================
+velocity        all create 298.0 12345 rot yes dist gaussian
+timestep        ${dt_val}
+
+print "Phase 2: NVT Relaxation at 298K"
+
+fix             nvt_relax all nvt temp 298.0 298.0 ${tdamp}
+run             50000
+unfix           nvt_relax
+
+# =============================================================================
+# Output
+# =============================================================================
+undump          xyz_traj
+undump          lmp_traj
+
+write_data      water_box_relaxed.lmpdat
+write_restart   water_box_relaxed.restart
+
+dump            final all xyz 1 water_box_relaxed.xyz
+dump_modify     final element O H
+run             0
+undump          final
+
+print "==========================================="
+print "NVT Relaxation Complete!"
+print "Final Density: $(density) g/cm^3"
+print "Output files: water_box_relaxed.lmpdat, water_box_relaxed.xyz, trajectory_water.xyz"
+print "==========================================="
