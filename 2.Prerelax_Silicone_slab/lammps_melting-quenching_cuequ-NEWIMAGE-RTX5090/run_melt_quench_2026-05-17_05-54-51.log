@@ -1,112 +1,108 @@
+========================================== 
+PDMS MACE Automated Workflow Started 
+Model: mp / mh-1 
+Head:  omol 
+Started at: 2026/05/17 ����  5:54:51.56 
+========================================== 
+[INFO] silicone_slab.lmpdat not found. Generating from XYZ... 
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.9.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+Successfully converted /workspace/silicone_slab.xyz to /workspace/silicone_slab.lmpdat
+Cell dimensions: 22.000 x 19.080 x 20.000 A
+Elements found: ['C', 'H', 'O', 'Si']
+Total atoms: 523
+Initial density: 0.762 g/cm^3
+Target density: 1.10 g/cm^3 (PDMS rubber)
+[INFO] Raw model found at: mace_pretained_models/mace-mh-1.model 
+[INFO] MLIAP PT model not found. Triggering conversion... 
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.9.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+Failed to get GPU information from pynvml: Not Supported. Using default values for NVIDIA GeForce RTX 5090.
+/workspace/convert_mace_to_mliap.py:59: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
+  model = torch.load(
+/usr/local/lib/python3.10/dist-packages/mace/modules/models.py:85: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  "atomic_numbers", torch.tensor(atomic_numbers, dtype=torch.int64)
+/usr/local/lib/python3.10/dist-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
+  warnings.warn(
+GPU information: NVIDIA RTX A6000, 8, 6, 45, 84, 300, 2100
+cuEquivariance conversion is available - GPU acceleration will be enabled!
+Loading model from: /workspace/mace_pretained_models/mace-mh-1.model
+Converting model to cuEquivariance format for GPU acceleration...
+cuEquivariance conversion successful!
+Model loaded and converted to float64
+Using uniquely specified head: omol
+Model saved to: /workspace/mace_pretained_models/mace-mh-1.model_omol.pt
+Conversion successful!
+[INFO] Starting LAMMPS simulation with model: mace_pretained_models/mace-mh-1.model_omol.pt 
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.9.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
 LAMMPS (10 Dec 2025)
+Failed to get GPU information from pynvml: Not Supported. Using default values for NVIDIA GeForce RTX 5090.
+W0516 21:55:19.674000 1 torch/fx/_symbolic_trace.py:52] is_fx_tracing will return true for both fx.symbolic_trace and torch.export. Please use is_fx_tracing_symbolic_tracing() for specifically fx.symbolic_trace or torch.compiler.is_compiling() for specifically torch.export/compile.
 KOKKOS mode with Kokkos version 4.7.1 is enabled
   using double precision
   using view layout = legacy
   will use up to 1 GPU(s) per node
 WARNING: When using a single thread, the Kokkos Serial backend (i.e. Makefile.kokkos_mpi_only) gives better performance than the OpenMP backend (src/KOKKOS/kokkos.cpp:266)
   using 1 OpenMP thread(s) per MPI task
-package kokkos
-package kokkos neigh half newton on
-# =============================================================================
-# LAMMPS input script for PDMS melt-quench densification
-# =============================================================================
-# VERSION - Target: 1.10 g/cm³
-#
-# Improvements over previous versions:
-# 1. Timestep 0.5 fs for numerical stability with MACE under pressure
-# 2. tdamp=0.05 (100 dt): 10× stronger thermostat to combat PV-work heating
-#    (v3 tdamp=0.1/0.5 caused 200-700K temperature overshoot)
-# 3. Peak pressure 3.5 GPa: verified that 0.5 GPa DECREASED density with MACE;
-#    5 GPa worked but broke thermostat; 3.5 GPa is the middle ground
-# 4. NVT heating: prevents box explosion seen in v3 (1000K at 1bar → rho halved)
-# 5. 3× annealing cycles under pressure to lock chain conformations
-# 6. 3-stage slow pressure release at 300K to minimize elastic rebound
-# =============================================================================
-
-units           metal
-neighbor        1.0 bin
-dimension       3
-boundary        p p p
-atom_style      atomic
-atom_modify     map yes
-newton          on
-
-read_data       silicone_slab.lmpdat
 Reading data file ...
   orthogonal box = (0 0 0) to (22 19.079963 20)
   1 by 1 by 1 MPI processor grid
   reading atoms ...
   523 atoms
   read_data CPU = 0.014 seconds
-
-# Use dynamic model path passed from command line via -var MODEL_PT_PATH
-pair_style      mliap unified ${MODEL_PT_PATH} 0
-pair_style      mliap unified mace_pretained_models/mace-mh-1.model_omol.pt 0
-pair_coeff      * * C H O Si
-
-thermo          100
-thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
-thermo_modify   flush yes
-
-# --- Key parameters (optimal) ---
-# tdamp = 100 × dt = 0.05 ps (LAMMPS recommended for metal units)
-# pdamp = 2000 × dt = 1.0 ps
-variable        tdamp equal 0.05
-variable        pdamp equal 1.0
-variable        dt_val equal 0.0005
-
-# --- Pressure targets ---
-variable        p_peak equal 35000.0
-# 3.5 GPa = 35,000 bar
-
-# --- Step counts ---
-variable        nstep_heat equal 5000
-variable        nstep_compress equal 20000
-# Annealing cycle: hold_hot + cool + hold_cold + reheat = 10000 per cycle × 3
-variable        nstep_anneal_hold equal 2000
-variable        nstep_anneal_cool equal 4000
-variable        nstep_anneal_reheat equal 2000
-# Release: 3 stages × 5000
-variable        nstep_release equal 5000
-# Final equilibration
-variable        nstep_equil equal 20000
-
-# =============================================================================
-# Master trajectory dump
-# =============================================================================
-dump            full_traj all xyz 500 full_trajectory.xyz
-dump_modify     full_traj element C H O Si
-
-dump            full_lmp all custom 500 full_trajectory.lammpstrj id type x y z
-dump_modify     full_lmp sort id
-
-# =============================================================================
-# Phase 1: Energy Minimization
-# =============================================================================
-print "Phase 1: Energy Minimization"
 Phase 1: Energy Minimization
-dump            min_xyz all xyz 100 minimize_traj.xyz
-dump_modify     min_xyz element C H O Si
-
-dump            min_lmp all custom 100 minimize_traj.lammpstrj id type x y z
-dump_modify     min_lmp sort id
-
-minimize        0.0 1.0e-8 5000 50000
 
 CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
 
 Your simulation uses code contributions which should be cited:
-
 - KOKKOS package: https://doi.org/10.1145/3731599.3767498
-
-@inproceedings{Johansson25,
- author = {A. Johansson and E. Weinberg and C. Trott and M. McCarthy and S. Moore},
- title = {{LAMMPS-KOKKOS}: {P}erformance Portable Molecular Dynamics Across Exascale Architectures},
- year = 2025,
- booktitle = {Proceedings of the SC '25 Workshops of the International Conference for High Performance Computing,
-  Networking, Storage and Analysis},
- pages = {1217–1232},
-}
+The log file lists these citations in BibTeX format.
 
 CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
 
@@ -122,6 +118,9 @@ Neighbor list info ...
       pair build: full/bin/kk/device
       stencil: full/bin/3d
       bin: kk/device
+Setting up cg/kk style minimization ...
+  Unit style    : metal
+  Current step  : 0
 WARNING: Fix MINIMIZE/kk not compatible with sending data in Kokkos communication (src/KOKKOS/comm_kokkos.cpp:744)
 WARNING: Fix with atom-based arrays not compatible with sending data in Kokkos communication, switching to legacy exchange/border communication (src/KOKKOS/comm_kokkos.cpp:751)
 WARNING: Fix MINIMIZE/kk not compatible with Kokkos sorting on device (src/KOKKOS/atom_kokkos.cpp:217)
@@ -169,42 +168,12 @@ Total # of neighbors = 49874
 Ave neighs/atom = 95.361377
 Neighbor list builds = 30
 Dangerous builds = 0
-
-undump          min_xyz
-undump          min_lmp
-
-variable        init_density equal $(density)
-variable        init_density equal 0.76196042726208512708
-print "Initial density: ${init_density} g/cm^3"
 Initial density: 0.761960427262085 g/cm^3
-
-# =============================================================================
-# Enable trajectory dumps for MD
-# =============================================================================
-dump            xyz_traj all xyz 200 trajectory.xyz
-dump_modify     xyz_traj element C H O Si
-
-dump            lmp_traj all custom 200 trajectory.lammpstrj id type x y z
-dump_modify     lmp_traj sort id
-
-dump            dcd_traj all dcd 200 trajectory.dcd
-
-velocity        all create 300.0 12345 rot yes dist gaussian
-timestep        ${dt_val}
-timestep        0.0005
-
-# =============================================================================
-# Phase 2: NVT Heating (300K -> 600K, fixed volume)
-# =============================================================================
-# Heating at NPT/1bar is safe (rho drops <0.003), but NVT is safer
-# NVT prevents any possibility of box expansion at elevated temperature
-print "Phase 2: NVT Heating 300K -> 600K (${nstep_heat} steps, $(v_nstep_heat*v_dt_val) ps)"
 Phase 2: NVT Heating 300K -> 600K (5000 steps, 2.5 ps)
-
-fix             p2 all nvt temp 300.0 600.0 ${tdamp}
-fix             p2 all nvt temp 300.0 600.0 0.05
-run             ${nstep_heat}
-run             5000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 126.6 | 126.6 | 126.6 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
        312   0              0              300            3343.2403     -634790.57      20.242139     -634770.33      8395.1837      0.76196043     0.96257439     1.7914607    
@@ -287,27 +256,12 @@ Total # of neighbors = 49790
 Ave neighs/atom = 95.200765
 Neighbor list builds = 329
 Dangerous builds = 0
-unfix           p2
-
-variable        heat_density equal $(density)
-variable        heat_density equal 0.7619604272620852381
-print "Density after heating: ${heat_density} g/cm^3"
 Density after heating: 0.761960427262085 g/cm^3
-
-# =============================================================================
-# Phase 3: NPT Compression (1 bar -> 35,000 bar at 600K)
-# =============================================================================
-# 0.5 GPa DECREASED density; 5 GPa worked but broke thermostat
-# 3.5 GPa is the sweet spot: sufficient compression + manageable PV work
-print "Phase 3: NPT Compression 1 bar -> ${p_peak} bar at 600K (${nstep_compress} steps)"
 Phase 3: NPT Compression 1 bar -> 35000 bar at 600K (20000 steps)
-
-fix             p3 all npt temp 600.0 600.0 ${tdamp} iso 1.0 ${p_peak} ${pdamp}
-fix             p3 all npt temp 600.0 600.0 0.05 iso 1.0 ${p_peak} ${pdamp}
-fix             p3 all npt temp 600.0 600.0 0.05 iso 1.0 35000 ${pdamp}
-fix             p3 all npt temp 600.0 600.0 0.05 iso 1.0 35000 1
-run             ${nstep_compress}
-run             20000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 5312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 128.6 | 128.6 | 128.6 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
       5312   0              0              589.88975      3136.501      -634765.47      39.8021       -634725.67      8395.1837      0.76196043     4.8718982      40.276978    
@@ -540,33 +494,14 @@ Total # of neighbors = 90884
 Ave neighs/atom = 173.77438
 Neighbor list builds = 2841
 Dangerous builds = 0
-unfix           p3
-
-variable        compressed_density equal $(density)
-variable        compressed_density equal 1.4830995579247125971
-print "==========================================="
 ===========================================
-print "Density after compression: ${compressed_density} g/cm^3"
 Density after compression: 1.48309955792471 g/cm^3
-print "==========================================="
 ===========================================
-
-# =============================================================================
-# Phase 4: Annealing Cycles Under Pressure (3 cycles)
-# =============================================================================
-# Purpose: cyclic T helps chains cross energy barriers → more compact packing
-# NEWIMAGE showed density kept rising during 5 GPa hold (0.877→1.46 over 8k steps)
-
-# --- Cycle 1 ---
-print "Phase 4 Cycle 1/3: Hold at 600K under ${p_peak} bar (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 1/3: Hold at 600K under 35000 bar (2000 steps)
-fix             c1_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_hold all npt temp 600.0 600.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_hold all npt temp 600.0 600.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c1_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 ${pdamp}
-fix             c1_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 25312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 167.7 | 167.7 | 167.7 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      25312   0              0              625.39454      33158.358     -634754.52      42.197743     -634712.33      4313.1277      1.4830996      7.5844999      47.250168    
@@ -619,17 +554,11 @@ Total # of neighbors = 89894
 Ave neighs/atom = 171.88145
 Neighbor list builds = 318
 Dangerous builds = 0
-unfix           c1_hold
-
-print "Phase 4 Cycle 1/3: Cool 600K -> 300K under ${p_peak} bar (${nstep_anneal_cool} steps)"
 Phase 4 Cycle 1/3: Cool 600K -> 300K under 35000 bar (4000 steps)
-fix             c1_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_cool all npt temp 600.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_cool all npt temp 600.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c1_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c1_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_cool}
-run             4000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 27312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 168.2 | 168.2 | 168.2 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      27312   0              0              553.53923      36264.494     -634747.04      37.349393     -634709.7       4358.7944      1.4675612      22.210675      57.732882    
@@ -702,17 +631,11 @@ Total # of neighbors = 92320
 Ave neighs/atom = 176.52008
 Neighbor list builds = 620
 Dangerous builds = 0
-unfix           c1_cool
-
-print "Phase 4 Cycle 1/3: Hold at 300K under ${p_peak} bar (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 1/3: Hold at 300K under 35000 bar (2000 steps)
-fix             c1_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_lock all npt temp 300.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_lock all npt temp 300.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c1_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c1_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 31312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.6 | 170.6 | 170.6 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      31312   0              0              314.61368      35229.456     -634769.39      21.228179     -634748.16      4240.6529      1.5084464      8.987099       38.238101    
@@ -765,17 +688,11 @@ Total # of neighbors = 92386
 Ave neighs/atom = 176.64627
 Neighbor list builds = 343
 Dangerous builds = 0
-unfix           c1_lock
-
-print "Phase 4 Cycle 1/3: Reheat 300K -> 600K under ${p_peak} bar (${nstep_anneal_reheat} steps)"
 Phase 4 Cycle 1/3: Reheat 300K -> 600K under 35000 bar (2000 steps)
-fix             c1_reheat all npt temp 300.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_reheat all npt temp 300.0 600.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c1_reheat all npt temp 300.0 600.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c1_reheat all npt temp 300.0 600.0 0.05 iso 35000 35000 ${pdamp}
-fix             c1_reheat all npt temp 300.0 600.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_reheat}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 33312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.8 | 170.8 | 170.8 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      33312   0              0              309.09046      37568.973     -634771.71      20.855506     -634750.86      4241.652       1.5080911      8.1200087      33.96697     
@@ -828,23 +745,12 @@ Total # of neighbors = 92020
 Ave neighs/atom = 175.94646
 Neighbor list builds = 317
 Dangerous builds = 0
-unfix           c1_reheat
-
-variable        cycle1_density equal $(density)
-variable        cycle1_density equal 1.500594566518570927
-print "Density after cycle 1: ${cycle1_density} g/cm^3"
 Density after cycle 1: 1.50059456651857 g/cm^3
-
-# --- Cycle 2 ---
-print "Phase 4 Cycle 2/3: Hold at 600K (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 2/3: Hold at 600K (2000 steps)
-fix             c2_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_hold all npt temp 600.0 600.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_hold all npt temp 600.0 600.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c2_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 ${pdamp}
-fix             c2_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 35312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.7 | 170.7 | 170.7 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      35312   0              0              564.41237      38944.025     -634749.99      38.083045     -634711.91      4262.8422      1.5005946      10.894113      47.963324    
@@ -897,17 +803,11 @@ Total # of neighbors = 90382
 Ave neighs/atom = 172.81453
 Neighbor list builds = 299
 Dangerous builds = 0
-unfix           c2_hold
-
-print "Phase 4 Cycle 2/3: Cool 600K -> 300K (${nstep_anneal_cool} steps)"
 Phase 4 Cycle 2/3: Cool 600K -> 300K (4000 steps)
-fix             c2_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_cool all npt temp 600.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_cool all npt temp 600.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c2_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c2_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_cool}
-run             4000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 37312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.6 | 170.6 | 170.6 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      37312   0              0              615.88314      30816.638     -634749.86      41.555973     -634708.3       4333.4198      1.4761546      13.825128      52.495478    
@@ -980,17 +880,11 @@ Total # of neighbors = 93104
 Ave neighs/atom = 178.01912
 Neighbor list builds = 548
 Dangerous builds = 0
-unfix           c2_cool
-
-print "Phase 4 Cycle 2/3: Hold at 300K (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 2/3: Hold at 300K (2000 steps)
-fix             c2_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_lock all npt temp 300.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_lock all npt temp 300.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c2_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c2_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 41312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.9 | 170.9 | 170.9 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      41312   0              0              289.60536      36976.929     -634765.93      19.540773     -634746.39      4220.8113      1.5155375      13.928571      45.377192    
@@ -1043,17 +937,11 @@ Total # of neighbors = 92810
 Ave neighs/atom = 177.45698
 Neighbor list builds = 276
 Dangerous builds = 0
-unfix           c2_lock
-
-print "Phase 4 Cycle 2/3: Reheat 300K -> 600K (${nstep_anneal_reheat} steps)"
 Phase 4 Cycle 2/3: Reheat 300K -> 600K (2000 steps)
-fix             c2_reheat all npt temp 300.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_reheat all npt temp 300.0 600.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c2_reheat all npt temp 300.0 600.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c2_reheat all npt temp 300.0 600.0 0.05 iso 35000 35000 ${pdamp}
-fix             c2_reheat all npt temp 300.0 600.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_reheat}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 43312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 171.7 | 171.7 | 171.7 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      43312   0              0              305.05637      33529.701     -634768.98      20.583311     -634748.4       4225.857       1.5137279      7.8326563      37.192619    
@@ -1106,23 +994,12 @@ Total # of neighbors = 92048
 Ave neighs/atom = 176
 Neighbor list builds = 338
 Dangerous builds = 0
-unfix           c2_reheat
-
-variable        cycle2_density equal $(density)
-variable        cycle2_density equal 1.5010927764627173264
-print "Density after cycle 2: ${cycle2_density} g/cm^3"
 Density after cycle 2: 1.50109277646272 g/cm^3
-
-# --- Cycle 3 (final: end at 300K, do NOT reheat) ---
-print "Phase 4 Cycle 3/3: Hold at 600K (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 3/3: Hold at 600K (2000 steps)
-fix             c3_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_hold all npt temp 600.0 600.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_hold all npt temp 600.0 600.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c3_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 ${pdamp}
-fix             c3_hold all npt temp 600.0 600.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 45312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 171.1 | 171.1 | 171.1 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      45312   0              0              578.0805       36487.363     -634753.44      39.005285     -634714.43      4261.4273      1.5010928      7.6086189      45.95544     
@@ -1175,17 +1052,11 @@ Total # of neighbors = 90746
 Ave neighs/atom = 173.51052
 Neighbor list builds = 313
 Dangerous builds = 0
-unfix           c3_hold
-
-print "Phase 4 Cycle 3/3: Cool 600K -> 300K (${nstep_anneal_cool} steps)"
 Phase 4 Cycle 3/3: Cool 600K -> 300K (4000 steps)
-fix             c3_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_cool all npt temp 600.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_cool all npt temp 600.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c3_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c3_cool all npt temp 600.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_cool}
-run             4000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 47312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 171.1 | 171.1 | 171.1 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      47312   0              0              524.63657      35647.818     -634745.1       35.399221     -634709.7       4315.9802      1.4821194      17.719722      63.269112    
@@ -1258,17 +1129,11 @@ Total # of neighbors = 91346
 Ave neighs/atom = 174.65774
 Neighbor list builds = 602
 Dangerous builds = 0
-unfix           c3_cool
-
-print "Phase 4 Cycle 3/3: Final hold at 300K under ${p_peak} bar (${nstep_anneal_hold} steps)"
 Phase 4 Cycle 3/3: Final hold at 300K under 35000 bar (2000 steps)
-fix             c3_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_lock all npt temp 300.0 300.0 0.05 iso ${p_peak} ${p_peak} ${pdamp}
-fix             c3_lock all npt temp 300.0 300.0 0.05 iso 35000 ${p_peak} ${pdamp}
-fix             c3_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 ${pdamp}
-fix             c3_lock all npt temp 300.0 300.0 0.05 iso 35000 35000 1
-run             ${nstep_anneal_hold}
-run             2000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 51312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 171.3 | 171.3 | 171.3 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      51312   0              0              377.32732      37501.746     -634772.17      25.459707     -634746.71      4285.3115      1.4927264      8.1355389      39.91218     
@@ -1321,32 +1186,14 @@ Total # of neighbors = 91862
 Ave neighs/atom = 175.64436
 Neighbor list builds = 313
 Dangerous builds = 0
-unfix           c3_lock
-
-variable        locked_density equal $(density)
-variable        locked_density equal 1.5004526952916192872
-print "==========================================="
 ===========================================
-print "Density after 3 annealing cycles (locked at 300K): ${locked_density} g/cm^3"
 Density after 3 annealing cycles (locked at 300K): 1.50045269529162 g/cm^3
-print "==========================================="
 ===========================================
-
-# =============================================================================
-# Phase 5: Multi-Stage Slow Pressure Release at 300K
-# =============================================================================
-# NEWIMAGE lost 0.46 g/cm³ in single-stage release from 5 GPa
-# 3-stage release at 300K minimizes chain mobility → less rebound
-
-# Stage 1: 35,000 -> 10,000 bar
-print "Phase 5 Stage 1/3: Release ${p_peak} -> 10000 bar at 300K (${nstep_release} steps)"
 Phase 5 Stage 1/3: Release 35000 -> 10000 bar at 300K (5000 steps)
-fix             r1 all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} 10000.0 ${pdamp}
-fix             r1 all npt temp 300.0 300.0 0.05 iso ${p_peak} 10000.0 ${pdamp}
-fix             r1 all npt temp 300.0 300.0 0.05 iso 35000 10000.0 ${pdamp}
-fix             r1 all npt temp 300.0 300.0 0.05 iso 35000 10000.0 1
-run             ${nstep_release}
-run             5000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 53312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 171.5 | 171.5 | 171.5 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      53312   0              0              298.299        29293.893     -634770.21      20.127366     -634750.09      4263.2452      1.5004527      6.1871817      34.139612    
@@ -1429,21 +1276,12 @@ Total # of neighbors = 78132
 Ave neighs/atom = 149.39197
 Neighbor list builds = 833
 Dangerous builds = 0
-unfix           r1
-
-variable        release1_density equal $(density)
-variable        release1_density equal 1.2804531472156281957
-print "Density at 10,000 bar: ${release1_density} g/cm^3"
 Density at 10,000 bar: 1.28045314721563 g/cm^3
-
-# Stage 2: 10,000 -> 1,000 bar
-print "Phase 5 Stage 2/3: Release 10000 -> 1000 bar at 300K (${nstep_release} steps)"
 Phase 5 Stage 2/3: Release 10000 -> 1000 bar at 300K (5000 steps)
-fix             r2 all npt temp 300.0 300.0 ${tdamp} iso 10000.0 1000.0 ${pdamp}
-fix             r2 all npt temp 300.0 300.0 0.05 iso 10000.0 1000.0 ${pdamp}
-fix             r2 all npt temp 300.0 300.0 0.05 iso 10000.0 1000.0 1
-run             ${nstep_release}
-run             5000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 58312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.5 | 170.5 | 170.5 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      58312   0              0              294.74319      11872.548     -634770.61      19.887442     -634750.72      4995.7297      1.2804531      17.169614      51.918976    
@@ -1526,21 +1364,12 @@ Total # of neighbors = 72044
 Ave neighs/atom = 137.75143
 Neighbor list builds = 799
 Dangerous builds = 0
-unfix           r2
-
-variable        release2_density equal $(density)
-variable        release2_density equal 1.1791445672702633995
-print "Density at 1,000 bar: ${release2_density} g/cm^3"
 Density at 1,000 bar: 1.17914456727026 g/cm^3
-
-# Stage 3: 1,000 -> 1 bar
-print "Phase 5 Stage 3/3: Release 1000 -> 1 bar at 300K (${nstep_release} steps)"
 Phase 5 Stage 3/3: Release 1000 -> 1 bar at 300K (5000 steps)
-fix             r3 all npt temp 300.0 300.0 ${tdamp} iso 1000.0 1.0 ${pdamp}
-fix             r3 all npt temp 300.0 300.0 0.05 iso 1000.0 1.0 ${pdamp}
-fix             r3 all npt temp 300.0 300.0 0.05 iso 1000.0 1.0 1
-run             ${nstep_release}
-run             5000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 63312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 170.1 | 170.1 | 170.1 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      63312   0              0              371.06426      4346.1692     -634775.87      25.037114     -634750.84      5424.9478      1.1791446      12.669189      42.172764    
@@ -1623,24 +1452,12 @@ Total # of neighbors = 60138
 Ave neighs/atom = 114.98662
 Neighbor list builds = 733
 Dangerous builds = 0
-unfix           r3
-
-variable        release3_density equal $(density)
-variable        release3_density equal 0.97260915593278707281
-print "Density at 1 bar: ${release3_density} g/cm^3"
 Density at 1 bar: 0.972609155932787 g/cm^3
-
-# =============================================================================
-# Phase 6: Final Ambient Equilibration (300K, 1 bar)
-# =============================================================================
-print "Phase 6: Final NPT equilibration at 300K, 1 bar (${nstep_equil} steps)"
 Phase 6: Final NPT equilibration at 300K, 1 bar (20000 steps)
-
-fix             p6 all npt temp 300.0 300.0 ${tdamp} iso 1.0 1.0 ${pdamp}
-fix             p6 all npt temp 300.0 300.0 0.05 iso 1.0 1.0 ${pdamp}
-fix             p6 all npt temp 300.0 300.0 0.05 iso 1.0 1.0 1
-run             ${nstep_equil}
-run             20000
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 68312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 169.2 | 169.2 | 169.2 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      68312   0              0              315.34678     -2482.1382     -634777.15      21.277644     -634755.87      6576.9459      0.97260916     7.6593589      33.847756    
@@ -1873,28 +1690,17 @@ Total # of neighbors = 60670
 Ave neighs/atom = 116.00382
 Neighbor list builds = 3071
 Dangerous builds = 0
-unfix           p6
-
-# =============================================================================
-# Output
-# =============================================================================
-undump          xyz_traj
-undump          lmp_traj
-undump          dcd_traj
-undump          full_traj
-undump          full_lmp
-
-write_data      densified_pdms.lmpdat
 System init for write_data ...
-
-dump            final all xyz 1 densified_pdms.xyz
-dump_modify     final element C H O Si
-run             0
 WARNING: No fixes with time integration, atoms won't move
 For more information see https://docs.lammps.org/err0028 (src/verlet.cpp:60)
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 88312
+  Time step     : 0.0005
 Per MPI rank memory allocation (min/avg/max) = 164.7 | 164.7 | 164.7 Mbytes
    Step          CPU           S/CPU           Temp          Press          PotEng         KinEng         TotEng         Volume        Density          Fmax          Fnorm     
      88312   0              0              349.29427      850.40554     -634765.59      23.56821      -634742.02      6509.858       0.98263246     9.2320854      36.33688     
+GPU information: NVIDIA RTX A6000, 8, 6, 45, 84, 300, 2100
 Loop time of 0.000172991 on 1 procs for 0 steps with 523 atoms
 
 110.4% CPU use with 1 MPI tasks x 1 OpenMP threads
@@ -1922,107 +1728,43 @@ Total # of neighbors = 60670
 Ave neighs/atom = 116.00382
 Neighbor list builds = 0
 Dangerous builds = 0
-undump          final
-
-write_restart   densified_pdms.restart
 System init for write_restart ...
-
-# =============================================================================
-# Summary
-# =============================================================================
-variable        target_density equal 1.10
-variable        final_density equal $(density)
-variable        final_density equal 0.98263246184944386119
-variable        final_lx equal $(lx)
-variable        final_lx equal 20.21171274586610167
-variable        final_ly equal $(ly)
-variable        final_ly equal 17.52903324353553316
-variable        final_lz equal $(lz)
-variable        final_lz equal 18.374284314423551479
-variable        rel_error equal abs(v_final_density-v_target_density)/v_target_density*100
-
-variable        total_steps equal ${nstep_heat}+${nstep_compress}+(${nstep_anneal_hold}*2+${nstep_anneal_cool}+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+${nstep_compress}+(${nstep_anneal_hold}*2+${nstep_anneal_cool}+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(${nstep_anneal_hold}*2+${nstep_anneal_cool}+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+${nstep_anneal_cool}+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+2000)*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+2000)*2+(2000*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+2000)*2+(2000*2+4000)+${nstep_release}*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+2000)*2+(2000*2+4000)+5000*3+${nstep_equil}
-variable        total_steps equal 5000+20000+(2000*2+4000+2000)*2+(2000*2+4000)+5000*3+20000
-variable        total_time equal ${total_steps}*${dt_val}
-variable        total_time equal 88000*${dt_val}
-variable        total_time equal 88000*0.0005
-
-print "==========================================="
 ===========================================
-print "Densification Complete!"
 Densification Complete!
-print "==========================================="
 ===========================================
-print "Density Summary (Target: 1.10 g/cm^3):"
 Density Summary (Target: 1.10 g/cm^3):
-print "  Initial density:         ${init_density} g/cm^3"
   Initial density:         0.761960427262085 g/cm^3
-print "  After NVT heating:       ${heat_density} g/cm^3"
   After NVT heating:       0.761960427262085 g/cm^3
-print "  After 3.5 GPa compress:  ${compressed_density} g/cm^3"
   After 3.5 GPa compress:  1.48309955792471 g/cm^3
-print "  After annealing cycle 1: ${cycle1_density} g/cm^3"
   After annealing cycle 1: 1.50059456651857 g/cm^3
-print "  After annealing cycle 2: ${cycle2_density} g/cm^3"
   After annealing cycle 2: 1.50109277646272 g/cm^3
-print "  After annealing (locked):${locked_density} g/cm^3"
   After annealing (locked):1.50045269529162 g/cm^3
-print "  Release at 10 kbar:      ${release1_density} g/cm^3"
   Release at 10 kbar:      1.28045314721563 g/cm^3
-print "  Release at 1 kbar:       ${release2_density} g/cm^3"
   Release at 1 kbar:       1.17914456727026 g/cm^3
-print "  Release at 1 bar:        ${release3_density} g/cm^3"
   Release at 1 bar:        0.972609155932787 g/cm^3
-print "  Final density:           ${final_density} g/cm^3"
   Final density:           0.982632461849444 g/cm^3
-print "  Final Lx:                ${final_lx} A"
   Final Lx:                20.2117127458661 A
-print "  Final Ly:                ${final_ly} A"
   Final Ly:                17.5290332435355 A
-print "  Final Lz:                ${final_lz} A"
   Final Lz:                18.3742843144236 A
-print "  Target:                  ${target_density} g/cm^3"
   Target:                  1.1 g/cm^3
-print "  Relative error:          ${rel_error}%%"
   Relative error:          10.6697761955051%%
-print "==========================================="
 ===========================================
-print "Output files:"
 Output files:
-print "  - densified_pdms.lmpdat     (LAMMPS data format)"
   - densified_pdms.lmpdat     (LAMMPS data format)
-print "  - densified_pdms.xyz        (XYZ format)"
   - densified_pdms.xyz        (XYZ format)
-print "  - densified_pdms.restart    (restart file)"
   - densified_pdms.restart    (restart file)
-print "  - full_trajectory.xyz       (complete XYZ trajectory)"
   - full_trajectory.xyz       (complete XYZ trajectory)
-print "  - full_trajectory.lammpstrj (complete LAMMPS trajectory)"
   - full_trajectory.lammpstrj (complete LAMMPS trajectory)
-print "  - trajectory.xyz            (MD XYZ trajectory)"
   - trajectory.xyz            (MD XYZ trajectory)
-print "  - trajectory.lammpstrj      (MD LAMMPS trajectory)"
   - trajectory.lammpstrj      (MD LAMMPS trajectory)
-print "  - trajectory.dcd            (MD DCD trajectory)"
   - trajectory.dcd            (MD DCD trajectory)
-print "  - log.lammps                (LAMMPS log file)"
   - log.lammps                (LAMMPS log file)
-print "==========================================="
 ===========================================
-print "Total Steps: ${total_steps}  |  Sim Time: ${total_time} ps"
 Total Steps: 88000  |  Sim Time: 44 ps
-print "Strategy: NVT Heat(600K) -> NPT 3.5GPa -> 3x Anneal -> 3-stage Release"
 Strategy: NVT Heat(600K) -> NPT 3.5GPa -> 3x Anneal -> 3-stage Release
-print "Key params: dt=0.5fs, tdamp=0.05, pdamp=1.0"
 Key params: dt=0.5fs, tdamp=0.05, pdamp=1.0
-print "==========================================="
 ===========================================
 Total wall time: 43:41:20
+ 
+[SUCCESS] Workflow completed at: 2026/05/19 �ܶ�  4:31:28.78 
+Final density and dimensions should be checked in the summary block below or in run_melt_quench_2026-05-17_05-54-51.log 
