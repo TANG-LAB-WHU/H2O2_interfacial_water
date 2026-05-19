@@ -1,16 +1,18 @@
 # =============================================================================
 # LAMMPS input script for PDMS melt-quench densification
 # =============================================================================
-# OPTIMIZED VERSION v3 - Target: 1.10 g/cm³ - True T-P Annealing (100k)
+# VERSION - Target: 1.10 g/cm³
 # 
-# Key improvements:
-# 1. Increased timestep to 1 fs
-# 2. Proper Melt phase at 1000K to fluidize polymer before applying pressure
-# 3. Aggressive Quench under 2 GPa pressure
-# 4. Total simulation time extended to 100 ps for physical relaxation 
+# Improvements over previous versions:
+# 1. Timestep 0.5 fs for numerical stability with MACE under pressure
+# 2. tdamp=0.05 (100 dt): 10× stronger thermostat to combat PV-work heating
+#    (v3 tdamp=0.1/0.5 caused 200-700K temperature overshoot)
+# 3. Peak pressure 3.5 GPa: verified that 0.5 GPa DECREASED density with MACE;
+#    5 GPa worked but broke thermostat; 3.5 GPa is the middle ground
+# 4. NVT heating: prevents box explosion seen in v3 (1000K at 1bar → rho halved)
+# 5. 3× annealing cycles under pressure to lock chain conformations
+# 6. 3-stage slow pressure release at 300K to minimize elastic rebound
 # =============================================================================
-
-log             melt_quench_log.lammps
 
 units           metal
 neighbor        1.0 bin
@@ -30,23 +32,42 @@ thermo          100
 thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
 thermo_modify   flush yes
 
-# Optimized damping parameters for stable MACE NPT
-variable        tdamp equal 0.1
-variable        pdamp equal 2.0
+# --- Key parameters (optimal) ---
+# tdamp = 100 × dt = 0.05 ps (LAMMPS recommended for metal units)
+# pdamp = 2000 × dt = 1.0 ps
+variable        tdamp equal 0.05
+variable        pdamp equal 1.0
+variable        dt_val equal 0.0005
 
-# -----------------------------------------------------------------------------
-# Master trajectory dump - captures entire simulation (minimization + MD)
-# -----------------------------------------------------------------------------
+# --- Pressure targets ---
+variable        p_peak equal 35000.0
+# 3.5 GPa = 35,000 bar
+
+# --- Step counts ---
+variable        nstep_heat equal 5000
+variable        nstep_compress equal 20000
+# Annealing cycle: hold_hot + cool + hold_cold + reheat = 10000 per cycle × 3
+variable        nstep_anneal_hold equal 2000
+variable        nstep_anneal_cool equal 4000
+variable        nstep_anneal_reheat equal 2000
+# Release: 3 stages × 5000
+variable        nstep_release equal 5000
+# Final equilibration
+variable        nstep_equil equal 20000
+
+# =============================================================================
+# Master trajectory dump
+# =============================================================================
 dump            full_traj all xyz 500 full_trajectory.xyz
 dump_modify     full_traj element C H O Si
 
 dump            full_lmp all custom 500 full_trajectory.lammpstrj id type x y z
 dump_modify     full_lmp sort id
 
-# -----------------------------------------------------------------------------
-# Step 1: Quick Minimization
-# -----------------------------------------------------------------------------
-print "Step 1: Quick Minimization"
+# =============================================================================
+# Phase 1: Energy Minimization
+# =============================================================================
+print "Phase 1: Energy Minimization"
 dump            min_xyz all xyz 100 minimize_traj.xyz
 dump_modify     min_xyz element C H O Si
 
@@ -61,71 +82,170 @@ undump          min_lmp
 variable        init_density equal $(density)
 print "Initial density: ${init_density} g/cm^3"
 
-# -----------------------------------------------------------------------------
-# Enable trajectory dumps for MD runs
-# -----------------------------------------------------------------------------
-dump            xyz_traj all xyz 100 trajectory.xyz
+# =============================================================================
+# Enable trajectory dumps for MD
+# =============================================================================
+dump            xyz_traj all xyz 200 trajectory.xyz
 dump_modify     xyz_traj element C H O Si
 
-dump            lmp_traj all custom 100 trajectory.lammpstrj id type x y z
+dump            lmp_traj all custom 200 trajectory.lammpstrj id type x y z
 dump_modify     lmp_traj sort id
 
-dump            dcd_traj all dcd 100 trajectory.dcd
+dump            dcd_traj all dcd 200 trajectory.dcd
 
 velocity        all create 300.0 12345 rot yes dist gaussian
-timestep        0.001
+timestep        ${dt_val}
 
-# -----------------------------------------------------------------------------
-# Phase 1: High-Temp Melt (300K -> 1000K, 1.0 bar, 10 ps)
-# -----------------------------------------------------------------------------
-print "Phase 1: Heating to 1000K to fluidize polymer (10,000 steps)"
-fix             p1 all npt temp 300.0 1000.0 ${tdamp} iso 1.0 1.0 ${pdamp}
-run             10000
-unfix           p1
+# =============================================================================
+# Phase 2: NVT Heating (300K -> 600K, fixed volume)
+# =============================================================================
+# Heating at NPT/1bar is safe (rho drops <0.003), but NVT is safer
+# NVT prevents any possibility of box expansion at elevated temperature
+print "Phase 2: NVT Heating 300K -> 600K (${nstep_heat} steps, $(v_nstep_heat*v_dt_val) ps)"
 
-# -----------------------------------------------------------------------------
-# Phase 2: High-Temp Compression to 2 GPa (1000K, 1.0 -> 20000.0 bar, 20 ps)
-# -----------------------------------------------------------------------------
-print "Phase 2: Compressing fluid to 2 GPa at 1000K (20,000 steps)"
-fix             p2 all npt temp 1000.0 1000.0 ${tdamp} iso 1.0 20000.0 ${pdamp}
-run             20000
+fix             p2 all nvt temp 300.0 600.0 ${tdamp}
+run             ${nstep_heat}
 unfix           p2
 
-variable        compressed_density_hight equal $(density)
-print "==========================================="
-print "Density after high-T compression: ${compressed_density_hight} g/cm^3"
-print "==========================================="
+variable        heat_density equal $(density)
+print "Density after heating: ${heat_density} g/cm^3"
 
-# -----------------------------------------------------------------------------
-# Phase 3: Quench under 2 GPa Pressure (1000K -> 300K, 20000.0 bar, 40 ps)
-# -----------------------------------------------------------------------------
-print "Phase 3: Thermal quench under high pressure to lock density (40,000 steps)"
-fix             p3 all npt temp 1000.0 300.0 ${tdamp} iso 20000.0 20000.0 ${pdamp}
-run             40000
+# =============================================================================
+# Phase 3: NPT Compression (1 bar -> 35,000 bar at 600K)
+# =============================================================================
+# 0.5 GPa DECREASED density; 5 GPa worked but broke thermostat
+# 3.5 GPa is the sweet spot: sufficient compression + manageable PV work
+print "Phase 3: NPT Compression 1 bar -> ${p_peak} bar at 600K (${nstep_compress} steps)"
+
+fix             p3 all npt temp 600.0 600.0 ${tdamp} iso 1.0 ${p_peak} ${pdamp}
+run             ${nstep_compress}
 unfix           p3
 
-variable        compressed_density_lowt equal $(density)
-print "Density after 300K quench: ${compressed_density_lowt} g/cm^3"
+variable        compressed_density equal $(density)
+print "==========================================="
+print "Density after compression: ${compressed_density} g/cm^3"
+print "==========================================="
 
-# -----------------------------------------------------------------------------
-# Phase 4: Slower Pressure Release (300K, 20000.0 -> 1.0 bar, 20 ps)
-# -----------------------------------------------------------------------------
-print "Phase 4: Pressure release at 300K (20,000 steps)"
-fix             p4 all npt temp 300.0 300.0 ${tdamp} iso 20000.0 1.0 ${pdamp}
-run             20000
-unfix           p4
+# =============================================================================
+# Phase 4: Annealing Cycles Under Pressure (3 cycles)
+# =============================================================================
+# Purpose: cyclic T helps chains cross energy barriers → more compact packing
+# NEWIMAGE showed density kept rising during 5 GPa hold (0.877→1.46 over 8k steps)
 
-# -----------------------------------------------------------------------------
-# Phase 5: Final Ambient Equilibration (300K, 1.0 bar, 10 ps)
-# -----------------------------------------------------------------------------
-print "Phase 5: Final NPT equilibration at 300K and 1 bar (10,000 steps)"
-fix             p5 all npt temp 300.0 300.0 ${tdamp} iso 1.0 1.0 ${pdamp}
-run             10000
-unfix           p5
+# --- Cycle 1 ---
+print "Phase 4 Cycle 1/3: Hold at 600K under ${p_peak} bar (${nstep_anneal_hold} steps)"
+fix             c1_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c1_hold
 
-# -----------------------------------------------------------------------------
+print "Phase 4 Cycle 1/3: Cool 600K -> 300K under ${p_peak} bar (${nstep_anneal_cool} steps)"
+fix             c1_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_cool}
+unfix           c1_cool
+
+print "Phase 4 Cycle 1/3: Hold at 300K under ${p_peak} bar (${nstep_anneal_hold} steps)"
+fix             c1_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c1_lock
+
+print "Phase 4 Cycle 1/3: Reheat 300K -> 600K under ${p_peak} bar (${nstep_anneal_reheat} steps)"
+fix             c1_reheat all npt temp 300.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_reheat}
+unfix           c1_reheat
+
+variable        cycle1_density equal $(density)
+print "Density after cycle 1: ${cycle1_density} g/cm^3"
+
+# --- Cycle 2 ---
+print "Phase 4 Cycle 2/3: Hold at 600K (${nstep_anneal_hold} steps)"
+fix             c2_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c2_hold
+
+print "Phase 4 Cycle 2/3: Cool 600K -> 300K (${nstep_anneal_cool} steps)"
+fix             c2_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_cool}
+unfix           c2_cool
+
+print "Phase 4 Cycle 2/3: Hold at 300K (${nstep_anneal_hold} steps)"
+fix             c2_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c2_lock
+
+print "Phase 4 Cycle 2/3: Reheat 300K -> 600K (${nstep_anneal_reheat} steps)"
+fix             c2_reheat all npt temp 300.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_reheat}
+unfix           c2_reheat
+
+variable        cycle2_density equal $(density)
+print "Density after cycle 2: ${cycle2_density} g/cm^3"
+
+# --- Cycle 3 (final: end at 300K, do NOT reheat) ---
+print "Phase 4 Cycle 3/3: Hold at 600K (${nstep_anneal_hold} steps)"
+fix             c3_hold all npt temp 600.0 600.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c3_hold
+
+print "Phase 4 Cycle 3/3: Cool 600K -> 300K (${nstep_anneal_cool} steps)"
+fix             c3_cool all npt temp 600.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_cool}
+unfix           c3_cool
+
+print "Phase 4 Cycle 3/3: Final hold at 300K under ${p_peak} bar (${nstep_anneal_hold} steps)"
+fix             c3_lock all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} ${p_peak} ${pdamp}
+run             ${nstep_anneal_hold}
+unfix           c3_lock
+
+variable        locked_density equal $(density)
+print "==========================================="
+print "Density after 3 annealing cycles (locked at 300K): ${locked_density} g/cm^3"
+print "==========================================="
+
+# =============================================================================
+# Phase 5: Multi-Stage Slow Pressure Release at 300K
+# =============================================================================
+# NEWIMAGE lost 0.46 g/cm³ in single-stage release from 5 GPa
+# 3-stage release at 300K minimizes chain mobility → less rebound
+
+# Stage 1: 35,000 -> 10,000 bar
+print "Phase 5 Stage 1/3: Release ${p_peak} -> 10000 bar at 300K (${nstep_release} steps)"
+fix             r1 all npt temp 300.0 300.0 ${tdamp} iso ${p_peak} 10000.0 ${pdamp}
+run             ${nstep_release}
+unfix           r1
+
+variable        release1_density equal $(density)
+print "Density at 10,000 bar: ${release1_density} g/cm^3"
+
+# Stage 2: 10,000 -> 1,000 bar
+print "Phase 5 Stage 2/3: Release 10000 -> 1000 bar at 300K (${nstep_release} steps)"
+fix             r2 all npt temp 300.0 300.0 ${tdamp} iso 10000.0 1000.0 ${pdamp}
+run             ${nstep_release}
+unfix           r2
+
+variable        release2_density equal $(density)
+print "Density at 1,000 bar: ${release2_density} g/cm^3"
+
+# Stage 3: 1,000 -> 1 bar
+print "Phase 5 Stage 3/3: Release 1000 -> 1 bar at 300K (${nstep_release} steps)"
+fix             r3 all npt temp 300.0 300.0 ${tdamp} iso 1000.0 1.0 ${pdamp}
+run             ${nstep_release}
+unfix           r3
+
+variable        release3_density equal $(density)
+print "Density at 1 bar: ${release3_density} g/cm^3"
+
+# =============================================================================
+# Phase 6: Final Ambient Equilibration (300K, 1 bar)
+# =============================================================================
+print "Phase 6: Final NPT equilibration at 300K, 1 bar (${nstep_equil} steps)"
+
+fix             p6 all npt temp 300.0 300.0 ${tdamp} iso 1.0 1.0 ${pdamp}
+run             ${nstep_equil}
+unfix           p6
+
+# =============================================================================
 # Output
-# -----------------------------------------------------------------------------
+# =============================================================================
 undump          xyz_traj
 undump          lmp_traj
 undump          dcd_traj
@@ -141,23 +261,38 @@ undump          final
 
 write_restart   densified_pdms.restart
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # Summary
-# -----------------------------------------------------------------------------
+# =============================================================================
 variable        target_density equal 1.10
-variable        final_density_snapshot equal $(density)
-variable        rel_error equal abs(v_final_density_snapshot-v_target_density)/v_target_density*100
+variable        final_density equal $(density)
+variable        final_lx equal $(lx)
+variable        final_ly equal $(ly)
+variable        final_lz equal $(lz)
+variable        rel_error equal abs(v_final_density-v_target_density)/v_target_density*100
+
+variable        total_steps equal ${nstep_heat}+${nstep_compress}+(${nstep_anneal_hold}*2+${nstep_anneal_cool}+${nstep_anneal_reheat})*2+(${nstep_anneal_hold}*2+${nstep_anneal_cool})+${nstep_release}*3+${nstep_equil}
+variable        total_time equal ${total_steps}*${dt_val}
 
 print "==========================================="
-print "V3 True T-P Annealing (100k) Complete!"
+print "Densification Complete!"
 print "==========================================="
 print "Density Summary (Target: 1.10 g/cm^3):"
-print "  Initial density:            ${init_density} g/cm^3"
-print "  After high-T compression:   ${compressed_density_hight} g/cm^3"
-print "  After quench compression:   ${compressed_density_lowt} g/cm^3"
-print "  Final density:              ${final_density_snapshot} g/cm^3"
-print "  Target:                     ${target_density} g/cm^3"
-print "  Relative error:             ${rel_error}%%"
+print "  Initial density:         ${init_density} g/cm^3"
+print "  After NVT heating:       ${heat_density} g/cm^3"
+print "  After 3.5 GPa compress:  ${compressed_density} g/cm^3"
+print "  After annealing cycle 1: ${cycle1_density} g/cm^3"
+print "  After annealing cycle 2: ${cycle2_density} g/cm^3"
+print "  After annealing (locked):${locked_density} g/cm^3"
+print "  Release at 10 kbar:      ${release1_density} g/cm^3"
+print "  Release at 1 kbar:       ${release2_density} g/cm^3"
+print "  Release at 1 bar:        ${release3_density} g/cm^3"
+print "  Final density:           ${final_density} g/cm^3"
+print "  Final Lx:                ${final_lx} A"
+print "  Final Ly:                ${final_ly} A"
+print "  Final Lz:                ${final_lz} A"
+print "  Target:                  ${target_density} g/cm^3"
+print "  Relative error:          ${rel_error}%%"
 print "==========================================="
 print "Output files:"
 print "  - densified_pdms.lmpdat     (LAMMPS data format)"
@@ -168,8 +303,9 @@ print "  - full_trajectory.lammpstrj (complete LAMMPS trajectory)"
 print "  - trajectory.xyz            (MD XYZ trajectory)"
 print "  - trajectory.lammpstrj      (MD LAMMPS trajectory)"
 print "  - trajectory.dcd            (MD DCD trajectory)"
-print "  - melt_quench_log.lammps    (LAMMPS log file)"
+print "  - log.lammps                (LAMMPS log file)"
 print "==========================================="
-print "Total: 100,000 steps (~2.5 hours)"
-print "Strategy: True T-P Annealing (Melt, Compress 2GPa, Quench, Release)"
+print "Total Steps: ${total_steps}  |  Sim Time: ${total_time} ps"
+print "Strategy: NVT Heat(600K) -> NPT 3.5GPa -> 3x Anneal -> 3-stage Release"
+print "Key params: dt=0.5fs, tdamp=0.05, pdamp=1.0"
 print "==========================================="

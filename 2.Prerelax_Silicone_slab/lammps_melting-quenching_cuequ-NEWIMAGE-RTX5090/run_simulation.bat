@@ -35,7 +35,7 @@ REM    - spice_wB97M   [SOLVENTS]: Good for liquid-phase/solvent interactions.
 REM    - mp_pbe_refit_add [LEGACY]: Standard Materials Project baseline.
 REM    -------------------------------------------------------------------------
 REM    * NOTE: If using mpa-0 or OFF23, set this to empty ""
-set "MACE_MODEL_HEAD=omat_pbe"
+set "MACE_MODEL_HEAD=omol"
 
 REM -----------------------------------------------------------------------------
 REM Setup Paths
@@ -149,7 +149,7 @@ if errorlevel 1 (
 
 echo. >> "!LOG_FILE!"
 echo [SUCCESS] Workflow completed at: %date% %time% >> "!LOG_FILE!"
-echo Final density should be checked in melt_quench_log.lammps >> "!LOG_FILE!"
+echo Final density and dimensions should be checked in the summary block below or in !LOG_FILE! >> "!LOG_FILE!"
 echo.
 echo All tasks finished. See !LOG_FILE! for full history.
 pause

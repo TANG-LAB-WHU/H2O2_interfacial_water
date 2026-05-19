@@ -14,7 +14,7 @@ services:
     # image: mylammps_rtx5080:full_features_mlip_aimd_cuequ
     image: mylammps_rtx5090:full_features_mlip_aimd_cuequ_imp
     working_dir: /workspace
-    shm_size: '16gb'
+    # shm_size: '16gb'
     volumes:
       - .:/workspace
     environment:
