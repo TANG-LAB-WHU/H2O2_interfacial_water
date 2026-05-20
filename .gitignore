@@ -44,3 +44,10 @@ cp2k_deployment
 2.GeoOpt_WHU-HPC_deprecated/
 
 .DS_Store
+
+# Force track files in regular_production_without-O2
+!5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/
+!5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**
+# Re-ignore massive wavefunctions to prevent GitHub 100MB limit push failure
+5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**/*.wfn
+5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**/*.wfn.bak-1
