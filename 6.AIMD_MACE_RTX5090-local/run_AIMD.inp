@@ -18,7 +18,7 @@ pair_style      mliap unified ${MODEL_PT_PATH} 0
 pair_coeff      * * C H O Si
 
 thermo          100
-thermo_style    custom step cpu spcpu temp press pe ke etotal vol density fmax fnorm
+thermo_style    custom step cpu spcpu temp press pe ke etotal vol fmax fnorm
 thermo_modify   flush yes
 
 # --- Key parameters ---
@@ -84,6 +84,5 @@ undump          final
 
 print "==========================================="
 print "NVT Production AIMD Run Complete!"
-print "Final Density: $(density) g/cm^3"
 print "Output files: assembled_interface_relaxed.lmpdat, assembled_interface_relaxed.xyz, trajectory_interface.xyz"
 print "==========================================="
