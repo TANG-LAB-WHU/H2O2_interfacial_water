@@ -41,6 +41,20 @@ print "Phase 1: Energy Minimization"
 minimize        0.0 1.0e-8 5000 50000
 
 # =============================================================================
+# Local Density Profile along Z-axis (Active during Production Run)
+# =============================================================================
+# Define 1D bins (chunks) along the Z-direction starting from the bottom of the box
+# Bin width: 0.5 Angstroms (provides high spatial resolution)
+compute         z_chunks all chunk/atom bin/1d z lower 0.5
+
+# Calculate time-averaged mass density profile along Z
+# Nevery = 10, Nrepeat = 100, Nfreq = 1000:
+# It averages every 10 steps, takes 100 samples, and outputs the average profile every 1000 steps (0.5 ps)
+# Note: 'density/mass' under 'units metal' outputs in g/mol/A^3.
+#       To convert to standard g/cm^3, multiply the output values by 1.66054.
+fix             dens_profile all ave/chunk 10 100 1000 z_chunks density/mass file mass_density_profile.out
+
+# =============================================================================
 # Phase 2: NVT Production AIMD Run
 # =============================================================================
 velocity        all create 298.0 12345 rot yes dist gaussian
@@ -57,6 +71,8 @@ unfix           nvt_prod
 # =============================================================================
 undump          xyz_traj
 undump          lmp_traj
+unfix           dens_profile
+uncompute       z_chunks
 
 write_data      assembled_interface_relaxed.lmpdat
 write_restart   assembled_interface_relaxed.restart
