@@ -1,18 +1,18 @@
 # =============================================================================
-# Docker Compose configuration for Water Box NVT Prerelaxation
+# Docker Compose configuration for PDMS melt-quench densification
 # =============================================================================
-# Purpose: Run LAMMPS with MACE ML force field to relax water box at 298K
+# Purpose: Run LAMMPS with MACE ML force field to densify PDMS to ~1.10 g/cm^3
 #
 # Services:
 #   - mace_model_conversion: Convert MACE model to MLIAP format
-#   - lammps_prerelaxation: Run NVT relaxation simulation
+#   - lammps_melt_quench: Run melt-quench simulation
 # =============================================================================
 
 services:
   # Base service configuration
   base:
     # image: mylammps_rtx5080:full_features_mlip_aimd_cuequ
-    image: mylammps_rtx5090:full_features_mlip_aimd_cuequ_imp
+    image: mylammps_rtx5080:full_features_mlip_aimd_cuequ_imp
     working_dir: /workspace
     # shm_size: '16gb'
     volumes:
@@ -46,10 +46,10 @@ services:
     container_name: mace_model_conversion
     command: ["python3", "/workspace/convert_mace_to_mliap.py"]
 
-  # Service for LAMMPS NVT prerelaxation simulation
+  # Service for LAMMPS melt-quench simulation
   # Allows variable override during `docker compose run`
-  lammps_prerelaxation:
+  lammps_melt_quench:
     extends: base
-    container_name: lammps_prerelaxation
-    command: ["bash", "-c", "lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in lammps_prerelaxtion.inp"]
+    container_name: lammps_melt_quench
+    command: ["bash", "-c", "lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in lammps_melt_quench.inp"]
 

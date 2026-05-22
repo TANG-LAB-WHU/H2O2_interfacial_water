@@ -233,6 +233,7 @@ if __name__ == '__main__':
         print(f"Elements found: {elements}")
         print(f"Total atoms: {len(atoms)}")
         print(f"Initial density: {density:.3f} g/cm^3")
+        print(f"Target density: 1.10 g/cm^3 (PDMS rubber)")
         
     except Exception as e:
         print(f"Error during conversion: {e}", file=sys.stderr)
