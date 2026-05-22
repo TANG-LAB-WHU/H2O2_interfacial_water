@@ -1,11 +1,11 @@
 # =============================================================================
-# Docker Compose configuration for PDMS melt-quench densification
+# Docker Compose configuration for water-PDMS interface production AIMD
 # =============================================================================
-# Purpose: Run LAMMPS with MACE ML force field to densify PDMS to ~1.10 g/cm^3
+# Purpose: Run LAMMPS with MACE ML force field for water-PDMS interface production AIMD
 #
 # Services:
 #   - mace_model_conversion: Convert MACE model to MLIAP format
-#   - lammps_melt_quench: Run melt-quench simulation
+#   - lammps_aimd: Run production AIMD simulation
 # =============================================================================
 
 services:
@@ -46,10 +46,10 @@ services:
     container_name: mace_model_conversion
     command: ["python3", "/workspace/convert_mace_to_mliap.py"]
 
-  # Service for LAMMPS melt-quench simulation
+  # Service for LAMMPS production AIMD simulation
   # Allows variable override during `docker compose run`
-  lammps_melt_quench:
+  lammps_aimd:
     extends: base
-    container_name: lammps_melt_quench
-    command: ["bash", "-c", "lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in lammps_melt_quench.inp"]
+    container_name: lammps_aimd
+    command: ["bash", "-c", "lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -in run_AIMD.inp"]
 

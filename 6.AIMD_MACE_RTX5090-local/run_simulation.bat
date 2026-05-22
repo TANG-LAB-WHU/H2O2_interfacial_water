@@ -2,11 +2,11 @@
 setlocal enabledelayedexpansion
 
 REM =============================================================================
-REM Batch script for PDMS melt-quench densification (AUTOMATED WORKFLOW)
+REM Batch script for water-PDMS interface production AIMD (AUTOMATED WORKFLOW)
 REM =============================================================================
 REM Purpose: 
 REM   1. Auto-download and convert MACE models
-REM   2. Run LAMMPS simulation with target density ~1.10 g/cm^3
+REM   2. Run production AIMD simulation for water-PDMS interface
 REM =============================================================================
 
 REM -----------------------------------------------------------------------------
@@ -74,10 +74,10 @@ REM ----------------------------------------------------------------------------
 REM Logging Setup
 REM -----------------------------------------------------------------------------
 for /f "usebackq" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'"`) do set "timestamp=%%i"
-set "LOG_FILE=run_melt_quench_!timestamp!.log"
+set "LOG_FILE=run_AIMD_!timestamp!.log"
 
 echo ========================================== >> "!LOG_FILE!"
-echo PDMS MACE Automated Workflow Started >> "!LOG_FILE!"
+echo Water-PDMS Interface MACE AIMD Workflow Started >> "!LOG_FILE!"
 echo Model: !MACE_MODEL_TYPE! / !MACE_MODEL_SIZE! >> "!LOG_FILE!"
 echo Head:  !MACE_MODEL_HEAD! >> "!LOG_FILE!"
 echo Started at: %date% %time% >> "!LOG_FILE!"
@@ -86,16 +86,16 @@ echo ========================================== >> "!LOG_FILE!"
 REM -----------------------------------------------------------------------------
 REM Step 0: Ensure Data File exists
 REM -----------------------------------------------------------------------------
-if not exist "silicone_slab.lmpdat" (
-    echo [INFO] silicone_slab.lmpdat not found. Generating from XYZ... | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
-    docker compose run --rm base python3 /workspace/xyz_to_lammps.py /workspace/silicone_slab.xyz /workspace/silicone_slab.lmpdat 2>&1 | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
+if not exist "assembled_interface.lmpdat" (
+    echo [INFO] assembled_interface.lmpdat not found. Generating from XYZ... | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
+    docker compose run --rm base python3 /workspace/xyz_to_lammps.py /workspace/assembled_interface.xyz /workspace/assembled_interface.lmpdat 2>&1 | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
     if errorlevel 1 (
-        echo [ERROR] silicone_slab.lmpdat generation failed. >> "!LOG_FILE!"
+        echo [ERROR] assembled_interface.lmpdat generation failed. >> "!LOG_FILE!"
         pause
         exit /b 1
     )
 ) else (
-    echo [INFO] silicone_slab.lmpdat found. >> "!LOG_FILE!"
+    echo [INFO] assembled_interface.lmpdat found. >> "!LOG_FILE!"
 )
 
 REM -----------------------------------------------------------------------------
@@ -139,7 +139,7 @@ REM ----------------------------------------------------------------------------
 echo [INFO] Starting LAMMPS simulation with model: !PT_MODEL_PATH! | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
 
 REM Run using variable injection for the model path
-docker compose run --rm lammps_melt_quench lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -var MODEL_PT_PATH !PT_MODEL_PATH! -in lammps_melt_quench.inp 2>&1 | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
+docker compose run --rm lammps_aimd lmp -k on g 1 -sf kk -pk kokkos neigh half newton on -var MODEL_PT_PATH !PT_MODEL_PATH! -in run_AIMD.inp 2>&1 | powershell -Command "$input | ForEach-Object { Add-Content -Path '!LOG_FILE!' -Value $_; Write-Host $_ }"
 
 if errorlevel 1 (
     echo [ERROR] LAMMPS simulation failed. >> "!LOG_FILE!"

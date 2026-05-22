@@ -1,5 +1,5 @@
 # =============================================================================
-# LAMMPS input script for Water Box NVT Prerelaxation using MACE
+# LAMMPS input script for water-PDMS interface production AIMD simulation using MACE
 # =============================================================================
 
 units           metal
@@ -41,16 +41,16 @@ print "Phase 1: Energy Minimization"
 minimize        0.0 1.0e-8 5000 50000
 
 # =============================================================================
-# Phase 2: NVT Relaxation
+# Phase 2: NVT Production AIMD Run
 # =============================================================================
 velocity        all create 298.0 12345 rot yes dist gaussian
 timestep        ${dt_val}
 
-print "Phase 2: NVT Relaxation at 298K"
+print "Phase 2: NVT Production AIMD Run at 298K"
 
-fix             nvt_relax all nvt temp 298.0 298.0 ${tdamp}
+fix             nvt_prod all nvt temp 298.0 298.0 ${tdamp}
 run             50000
-unfix           nvt_relax
+unfix           nvt_prod
 
 # =============================================================================
 # Output
@@ -67,7 +67,7 @@ run             0
 undump          final
 
 print "==========================================="
-print "NVT Relaxation Complete!"
+print "NVT Production AIMD Run Complete!"
 print "Final Density: $(density) g/cm^3"
 print "Output files: assembled_interface_relaxed.lmpdat, assembled_interface_relaxed.xyz, trajectory_interface.xyz"
 print "==========================================="
