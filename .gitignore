@@ -51,3 +51,4 @@ cp2k_deployment
 # Re-ignore massive wavefunctions to prevent GitHub 100MB limit push failure
 5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**/*.wfn
 5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**/*.wfn.bak-1
+5.AIMD_CP2K_WHU-HPC/regular_production_without-O2/**/*.out
