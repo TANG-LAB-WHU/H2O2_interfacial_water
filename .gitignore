@@ -33,7 +33,6 @@ slurm-*.out
 # Untrack test output files for docker
 docker_test/
 
-
 # MACE pretrain model
 # *.pt
 # *.model
