@@ -33,8 +33,6 @@ slurm-*.out
 # Untrack test output files for docker
 docker_test/
 
-# Ignore cp2k compilation directory
-cp2k_deployment
 
 # MACE pretrain model
 # *.pt
