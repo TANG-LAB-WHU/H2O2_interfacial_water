@@ -49,11 +49,13 @@ docker_test/
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn.bak-1
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.out
-5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.cell
-5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.ener
+#5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.cell
+#5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.ener
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.stress
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.restart
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.restart.bak-1
-5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.xyz
+#5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.xyz
+5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*-frc-1.xyz
+5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*-vel-1.xyz
 # Retain assembled_interface.xyz
 !5.AIMD_CP2K_WHU-HPC/regular_production_*/assembled_interface.xyz
