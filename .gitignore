@@ -45,6 +45,9 @@ docker_test/
 # Force track files in regular_production_*
 !5.AIMD_CP2K_WHU-HPC/regular_production_*/
 !5.AIMD_CP2K_WHU-HPC/regular_production_*/**
+# Re-ignore system files
+5.AIMD_CP2K_WHU-HPC/regular_production_*/**/.DS_Store
+
 # Re-ignore massive wavefunctions and outputs to prevent GitHub 100MB limit push failure
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn.bak-1
