@@ -21,6 +21,7 @@ trajectory.dcd
 *_aimd-pos-1.xyz
 *_aimd-1_*.restart
 aimd.out
+aimd_*.out
 *_aimd-vel-1.xyz
 *_aimd-frc-1.xyz
 
@@ -52,6 +53,7 @@ docker_test/
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.wfn.bak-1
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.out
+5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.error
 #5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.cell
 #5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.ener
 5.AIMD_CP2K_WHU-HPC/regular_production_*/**/*.stress
